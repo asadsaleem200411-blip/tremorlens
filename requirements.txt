@@ -1,0 +1,15 @@
+pandas
+pydantic
+requests
+sqlalchemy
+psycopg2-binary
+scikit-learn
+torch
+optuna
+mlflow
+streamlit
+plotly
+jupyter
+geopandas
+psycopg[binary]
+python-dotenv
