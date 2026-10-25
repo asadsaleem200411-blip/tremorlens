@@ -1,22 +1,60 @@
 section,category,decade_or_year,metric,value,count,total,share_or_rate,spread_std,notes
-1. Event Counts by Source,both,all,count,3059,3059,4172,0.7332,,Share of total unified events (73.32%)
-1. Event Counts by Source,usgs_only,all,count,641,641,4172,0.1536,,Share of total unified events (15.36%)
-1. Event Counts by Source,emsc_only,all,count,472,472,4172,0.1131,,Share of total unified events (11.31%)
-1. Event Counts by Source,total_clean,all,count,4172,4172,4172,1.0,,Share of total unified events (100.00%)
-2. Match Rate Per Year,annual,2025,match_rate,0.7332,3059,4172,0.7332,,"both=3059, usgs_only=641, emsc_only=472"
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,matched_pairs_count,3059,3059,4172,0.7332,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 3059 matched pairs (>=2005)
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,usgs_only_count,641,641,4172,0.1536,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 641 unmatched USGS events
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,emsc_only_count,472,472,4172,0.1131,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 472 unmatched EMSC events
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,cross_source_match_rate,0.7332,3059,4172,0.7332,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Overall match rate 73.32% (>=2005)
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_time_diff_seconds,1.293,3059,3059,,1.87,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean origin time difference in seconds
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_magnitude_diff,0.039,3059,3059,,0.08,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean magnitude difference
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_depth_diff_km,8.078,3059,3059,,11.999,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean depth difference in km
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_distance_km,10.948,3059,3059,,11.636,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean epicentral distance in km
-4. Match Rate by EMSC Author (NEIC vs Other),NEIC,all,match_rate,0.8669,456,526,0.8669,,NEIC events are USGS own data; acts as sanity check for matching thresholds
-4. Match Rate by EMSC Author (NEIC vs Other),OTHER,all,match_rate,0.8662,2603,3005,0.8662,,"All other EMSC contributing authors (regional networks, etc.)"
-5. Matched Differences by Decade,matched_pairs,2020s,time_diff_seconds,1.293,3059,3059,,1.87,"median=0.693, iqr=1.442, min=0.0, max=37.255"
-5. Matched Differences by Decade,matched_pairs,2020s,magnitude_diff,0.039,3059,3059,,0.08,"median=0.0, iqr=0.1, min=0.0, max=0.5"
-5. Matched Differences by Decade,matched_pairs,2020s,depth_diff_km,8.078,3059,3059,1.0,11.999,"median=3.4, iqr=11.322, min=0.0, max=165.0"
-6. Default Depth Share by Source and Decade,both,2020s,depth_is_default_share,0.4652,1423,3059,0.4652,,1423 of 3059 events have depth_km == 10 exactly (46.52%)
-6. Default Depth Share by Source and Decade,emsc_only,2020s,depth_is_default_share,0.2669,126,472,0.2669,,126 of 472 events have depth_km == 10 exactly (26.69%)
-6. Default Depth Share by Source and Decade,usgs_only,2020s,depth_is_default_share,0.5023,322,641,0.5023,,322 of 641 events have depth_km == 10 exactly (50.23%)
+1. Event Counts by Source,both,all,count,109305,109305,202308,0.5403,,Share of total unified events (54.03%)
+1. Event Counts by Source,usgs_only,all,count,78675,78675,202308,0.3889,,Share of total unified events (38.89%)
+1. Event Counts by Source,emsc_only,all,count,14328,14328,202308,0.0708,,Share of total unified events (7.08%)
+1. Event Counts by Source,total_clean,all,count,202308,202308,202308,1.0,,Share of total unified events (100.00%)
+2. Match Rate Per Year,annual,2000,match_rate,0.0363,183,5039,0.0363,,"both=183, usgs_only=4827, emsc_only=29"
+2. Match Rate Per Year,annual,2001,match_rate,0.0377,179,4753,0.0377,,"both=179, usgs_only=4501, emsc_only=73"
+2. Match Rate Per Year,annual,2002,match_rate,0.0407,204,5008,0.0407,,"both=204, usgs_only=4759, emsc_only=45"
+2. Match Rate Per Year,annual,2003,match_rate,0.0363,188,5175,0.0363,,"both=188, usgs_only=4947, emsc_only=40"
+2. Match Rate Per Year,annual,2004,match_rate,0.1052,665,6321,0.1052,,"both=665, usgs_only=5518, emsc_only=138"
+2. Match Rate Per Year,annual,2005,match_rate,0.3628,2983,8222,0.3628,,"both=2983, usgs_only=4895, emsc_only=344"
+2. Match Rate Per Year,annual,2006,match_rate,0.4236,3181,7510,0.4236,,"both=3181, usgs_only=3894, emsc_only=435"
+2. Match Rate Per Year,annual,2007,match_rate,0.5003,3872,7740,0.5003,,"both=3872, usgs_only=3402, emsc_only=466"
+2. Match Rate Per Year,annual,2008,match_rate,0.5358,3701,6908,0.5358,,"both=3701, usgs_only=2606, emsc_only=601"
+2. Match Rate Per Year,annual,2009,match_rate,0.5946,3927,6604,0.5946,,"both=3927, usgs_only=2126, emsc_only=551"
+2. Match Rate Per Year,annual,2010,match_rate,0.55,4248,7723,0.55,,"both=4248, usgs_only=2966, emsc_only=509"
+2. Match Rate Per Year,annual,2011,match_rate,0.5502,5460,9924,0.5502,,"both=5460, usgs_only=4124, emsc_only=340"
+2. Match Rate Per Year,annual,2012,match_rate,0.5988,4651,7767,0.5988,,"both=4651, usgs_only=2537, emsc_only=579"
+2. Match Rate Per Year,annual,2013,match_rate,0.5758,4596,7982,0.5758,,"both=4596, usgs_only=2613, emsc_only=773"
+2. Match Rate Per Year,annual,2014,match_rate,0.5359,4831,9014,0.5359,,"both=4831, usgs_only=3502, emsc_only=681"
+2. Match Rate Per Year,annual,2015,match_rate,0.591,4580,7749,0.591,,"both=4580, usgs_only=2573, emsc_only=596"
+2. Match Rate Per Year,annual,2016,match_rate,0.6146,5016,8162,0.6146,,"both=5016, usgs_only=2422, emsc_only=724"
+2. Match Rate Per Year,annual,2017,match_rate,0.6746,4708,6979,0.6746,,"both=4708, usgs_only=1663, emsc_only=608"
+2. Match Rate Per Year,annual,2018,match_rate,0.6763,5523,8167,0.6763,,"both=5523, usgs_only=1986, emsc_only=658"
+2. Match Rate Per Year,annual,2019,match_rate,0.6605,5225,7911,0.6605,,"both=5225, usgs_only=1986, emsc_only=700"
+2. Match Rate Per Year,annual,2020,match_rate,0.6908,5052,7313,0.6908,,"both=5052, usgs_only=1458, emsc_only=803"
+2. Match Rate Per Year,annual,2021,match_rate,0.6463,6285,9725,0.6463,,"both=6285, usgs_only=2674, emsc_only=766"
+2. Match Rate Per Year,annual,2022,match_rate,0.7167,6142,8570,0.7167,,"both=6142, usgs_only=1623, emsc_only=805"
+2. Match Rate Per Year,annual,2023,match_rate,0.7006,5920,8450,0.7006,,"both=5920, usgs_only=1723, emsc_only=807"
+2. Match Rate Per Year,annual,2024,match_rate,0.7128,5029,7055,0.7128,,"both=5029, usgs_only=1368, emsc_only=658"
+2. Match Rate Per Year,annual,2025,match_rate,0.7471,7113,9521,0.7471,,"both=7113, usgs_only=1445, emsc_only=963"
+2. Match Rate Per Year,annual,2026,match_rate,0.8328,5843,7016,0.8328,,"both=5843, usgs_only=537, emsc_only=636"
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,matched_pairs_count,107886,107886,176012,0.6129,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 107886 matched pairs (>=2005)
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,usgs_only_count,54123,54123,176012,0.3075,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 54123 unmatched USGS events
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,emsc_only_count,14003,14003,176012,0.0796,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 14003 unmatched EMSC events
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,cross_source_match_rate,0.6129,107886,176012,0.6129,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Overall match rate 61.29% (>=2005)
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_time_diff_seconds,1.429,107886,107886,,2.23,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean origin time difference in seconds
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_magnitude_diff,0.075,107886,107886,,0.11,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean magnitude difference
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_depth_diff_km,9.668,107886,107886,,16.479,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean depth difference in km
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_distance_km,11.926,107886,107886,,14.418,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean epicentral distance in km
+4. Match Rate by EMSC Author (NEIC vs Other),NEIC,all,match_rate,0.9068,17570,19375,0.9068,,NEIC events are USGS own data; acts as sanity check for matching thresholds
+4. Match Rate by EMSC Author (NEIC vs Other),OTHER,all,match_rate,0.8799,91735,104258,0.8799,,"All other EMSC contributing authors (regional networks, etc.)"
+5. Matched Differences by Decade,matched_pairs,2000s,time_diff_seconds,2.366,19083,19083,,3.285,"median=1.52, iqr=2.56, min=0.0, max=58.31"
+5. Matched Differences by Decade,matched_pairs,2000s,magnitude_diff,0.139,19083,19083,,0.148,"median=0.1, iqr=0.2, min=0.0, max=1.0"
+5. Matched Differences by Decade,matched_pairs,2000s,depth_diff_km,16.573,19083,19083,1.0,27.48,"median=9.0, iqr=21.0, min=0.0, max=545.0"
+5. Matched Differences by Decade,matched_pairs,2010s,time_diff_seconds,1.402,48838,48838,,2.024,"median=0.8, iqr=1.48, min=0.0, max=58.65"
+5. Matched Differences by Decade,matched_pairs,2010s,magnitude_diff,0.078,48838,48838,,0.103,"median=0.1, iqr=0.1, min=0.0, max=1.0"
+5. Matched Differences by Decade,matched_pairs,2010s,depth_diff_km,9.788,48838,48838,1.0,13.492,"median=5.2, iqr=13.33, min=0.0, max=375.0"
+5. Matched Differences by Decade,matched_pairs,2020s,time_diff_seconds,1.071,41384,41384,,1.729,"median=0.56, iqr=1.155, min=0.0, max=58.929"
+5. Matched Differences by Decade,matched_pairs,2020s,magnitude_diff,0.046,41384,41384,,0.087,"median=0.0, iqr=0.1, min=0.0, max=1.0"
+5. Matched Differences by Decade,matched_pairs,2020s,depth_diff_km,6.564,41384,41384,1.0,11.488,"median=1.769, iqr=8.348, min=0.0, max=259.0"
+6. Default Depth Share by Source and Decade,both,2000s,depth_is_default_share,0.2664,5084,19083,0.2664,,5084 of 19083 events have depth_km == 10 exactly (26.64%)
+6. Default Depth Share by Source and Decade,emsc_only,2000s,depth_is_default_share,0.1653,450,2722,0.1653,,450 of 2722 events have depth_km == 10 exactly (16.53%)
+6. Default Depth Share by Source and Decade,usgs_only,2000s,depth_is_default_share,0.2573,10673,41475,0.2573,,10673 of 41475 events have depth_km == 10 exactly (25.73%)
+6. Default Depth Share by Source and Decade,both,2010s,depth_is_default_share,0.2803,13688,48838,0.2803,,13688 of 48838 events have depth_km == 10 exactly (28.03%)
+6. Default Depth Share by Source and Decade,emsc_only,2010s,depth_is_default_share,0.2532,1562,6168,0.2532,,1562 of 6168 events have depth_km == 10 exactly (25.32%)
+6. Default Depth Share by Source and Decade,usgs_only,2010s,depth_is_default_share,0.3777,9962,26372,0.3777,,9962 of 26372 events have depth_km == 10 exactly (37.77%)
+6. Default Depth Share by Source and Decade,both,2020s,depth_is_default_share,0.4652,19250,41384,0.4652,,19250 of 41384 events have depth_km == 10 exactly (46.52%)
+6. Default Depth Share by Source and Decade,emsc_only,2020s,depth_is_default_share,0.2918,1587,5438,0.2918,,1587 of 5438 events have depth_km == 10 exactly (29.18%)
+6. Default Depth Share by Source and Decade,usgs_only,2020s,depth_is_default_share,0.597,6464,10828,0.597,,6464 of 10828 events have depth_km == 10 exactly (59.70%)

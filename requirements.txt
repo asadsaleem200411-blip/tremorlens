@@ -13,3 +13,4 @@ jupyter
 geopandas
 psycopg[binary]
 python-dotenv
+matplotlib

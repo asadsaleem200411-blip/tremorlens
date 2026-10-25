@@ -43,8 +43,8 @@ from etl.db import get_engine
 # Matching Threshold Constants
 # =============================================================================
 MAX_TIME_DIFF_SECONDS: float = 60.0  # Origin times differ by at most 60 seconds
-MAX_DISTANCE_KM: float = 100.0       # Epicentres are within 100 km (haversine)
-MAX_MAG_DIFF: float = 0.5           # Magnitudes differ by at most 0.5
+MAX_DISTANCE_KM: float = 150.0       # Epicentres are within 150 km (haversine)
+MAX_MAG_DIFF: float = 1.0          # Magnitudes differ by at most 1.0
 
 # Alias for time window constant
 TIME_WINDOW_SECONDS: float = MAX_TIME_DIFF_SECONDS
