@@ -1,0 +1,19 @@
+group,label,n,mean,median,std,p05,p95,share_abs_gt_0_5
+overall,all,100489,0.015,0.0,0.129,-0.2,0.2,0.0048
+usgs_mag_band,4.5-4.9,65353,0.034,0.0,0.112,-0.1,0.2,0.0032
+usgs_mag_band,5.0-5.9,32091,-0.018,0.0,0.153,-0.3,0.2,0.0076
+usgs_mag_band,6.0+,3045,-0.023,0.0,0.125,-0.2,0.1,0.0108
+mag_type_pair (usgs | emsc),mb | mb,67496,0.02,0.0,0.095,-0.1,0.2,0.0015
+mag_type_pair (usgs | emsc),mww | mw,10475,0.002,0.0,0.077,-0.1,0.1,0.0008
+mag_type_pair (usgs | emsc),mwc | mb,7388,-0.034,0.0,0.221,-0.4,0.3,0.0164
+mag_type_pair (usgs | emsc),mww | mb,3331,0.032,0.0,0.23,-0.4,0.4,0.0207
+mag_type_pair (usgs | emsc),mb | m,2569,0.028,0.0,0.135,-0.2,0.3,0.0016
+mag_type_pair (usgs | emsc),mwr | mb,1813,0.141,0.1,0.196,-0.2,0.4,0.0121
+mag_type_pair (usgs | emsc),mwc | mw,1429,-0.017,0.0,0.116,-0.2,0.2,0.0014
+mag_type_pair (usgs | emsc),mb | mw,1333,0.069,0.0,0.287,-0.3,0.5,0.0473
+mag_type_pair (usgs | emsc),mwr | mw,1047,0.02,0.0,0.089,0.0,0.2,0.0029
+mag_type_pair (usgs | emsc),mwb | mw,995,0.012,0.0,0.09,-0.1,0.2,0.0
+mag_type_pair (usgs | emsc),mwb | mb,771,-0.045,0.0,0.234,-0.4,0.3,0.0324
+mag_type_pair (usgs | emsc),mb | ml,373,0.031,0.0,0.235,-0.3,0.4,0.0456
+mag_type_pair (usgs | emsc),mwc | m,287,-0.151,-0.1,0.228,-0.5,0.2,0.0279
+mag_type_pair (usgs | emsc),mw | mw,206,-0.008,0.0,0.093,-0.108,0.097,0.0049
