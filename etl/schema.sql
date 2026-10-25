@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS events_clean (
     sig INTEGER,
     matched_usgs_id VARCHAR(255),
     matched_emsc_id VARCHAR(255),
+    depth_is_default BOOLEAN,
     ingested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
