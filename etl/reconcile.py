@@ -631,12 +631,27 @@ def generate_quality_report(
         e_cnt = counts["emsc_only"]
         yr_total = b_cnt + u_cnt + e_cnt
         m_rate = round(b_cnt / yr_total, 4) if yr_total > 0 else 0.0
+        for side_metric, side_other in (("usgs_match_rate", u_cnt), ("emsc_match_rate", e_cnt)):
+            side_total = b_cnt + side_other
+            side_rate = round(b_cnt / side_total, 4) if side_total > 0 else 0.0
+            report_rows.append({
+                "section": sec2,
+                "category": "annual",
+                "decade_or_year": str(yr),
+                "metric": side_metric,
+                "value": side_rate,
+                "count": b_cnt,
+                "total": side_total,
+                "share_or_rate": side_rate,
+                "spread_std": "",
+                "notes": "matched events divided by that catalog's own events in the year",
+            })
 
         report_rows.append({
             "section": sec2,
             "category": "annual",
             "decade_or_year": str(yr),
-            "metric": "match_rate",
+            "metric": "matched_share_of_union",
             "value": m_rate,
             "count": b_cnt,
             "total": yr_total,
@@ -674,6 +689,8 @@ def generate_quality_report(
         round(both_2005_cnt / clean_2005_total, 4) if clean_2005_total > 0 else 0.0
     )
 
+    usgs_side_2005 = round(both_2005_cnt / (both_2005_cnt + u_2005_cnt), 4) if (both_2005_cnt + u_2005_cnt) else 0.0
+    emsc_side_2005 = round(both_2005_cnt / (both_2005_cnt + e_2005_cnt), 4) if (both_2005_cnt + e_2005_cnt) else 0.0
     t_diffs_2005 = [m["time_diff_seconds"] for m in matches_2005]
     m_diffs_2005 = [m["magnitude_diff"] for m in matches_2005]
     d_diffs_2005 = [
@@ -690,10 +707,12 @@ def generate_quality_report(
         ("matched_pairs_count", both_2005_cnt, both_2005_cnt, clean_2005_total, match_rate_2005, "", f"{both_2005_cnt} matched pairs (>=2005)"),
         ("usgs_only_count", u_2005_cnt, u_2005_cnt, clean_2005_total, round(u_2005_cnt / clean_2005_total, 4) if clean_2005_total else 0.0, "", f"{u_2005_cnt} unmatched USGS events"),
         ("emsc_only_count", e_2005_cnt, e_2005_cnt, clean_2005_total, round(e_2005_cnt / clean_2005_total, 4) if clean_2005_total else 0.0, "", f"{e_2005_cnt} unmatched EMSC events"),
-        ("cross_source_match_rate", match_rate_2005, both_2005_cnt, clean_2005_total, match_rate_2005, "", f"Overall match rate {match_rate_2005*100:.2f}% (>=2005)"),
-        ("mean_time_diff_seconds", round(t_mean, 3), len(t_diffs_2005), len(t_diffs_2005), "", round(t_std, 3), "Mean origin time difference in seconds"),
-        ("mean_magnitude_diff", round(m_mean, 3), len(m_diffs_2005), len(m_diffs_2005), "", round(m_std, 3), "Mean magnitude difference"),
-        ("mean_depth_diff_km", round(d_mean, 3), len(d_diffs_2005), len(d_diffs_2005), "", round(d_std, 3), "Mean depth difference in km"),
+        ("matched_share_of_union", match_rate_2005, both_2005_cnt, clean_2005_total, match_rate_2005, "", f"Matched pairs as a share of the union of both catalogs: {match_rate_2005*100:.2f}% (>=2005); not a per-source match rate"),
+        ("usgs_match_rate", usgs_side_2005, both_2005_cnt, both_2005_cnt + u_2005_cnt, usgs_side_2005, "", f"Share of USGS events that have an EMSC partner: {usgs_side_2005*100:.2f}% (>=2005); depends on EMSC coverage"),
+        ("emsc_match_rate", emsc_side_2005, both_2005_cnt, both_2005_cnt + e_2005_cnt, emsc_side_2005, "", f"Share of EMSC events that have a USGS partner: {emsc_side_2005*100:.2f}% (>=2005)"),
+        ("mean_time_diff_seconds", round(t_mean, 3), len(t_diffs_2005), len(t_diffs_2005), "", round(t_std, 3), "Mean absolute origin time difference in seconds"),
+        ("mean_magnitude_diff", round(m_mean, 3), len(m_diffs_2005), len(m_diffs_2005), "", round(m_std, 3), "Mean absolute magnitude difference"),
+        ("mean_depth_diff_km", round(d_mean, 3), len(d_diffs_2005), len(d_diffs_2005), "", round(d_std, 3), "Mean absolute depth difference in km"),
         ("mean_distance_km", round(dist_mean, 3), len(dist_2005), len(dist_2005), "", round(dist_std, 3), "Mean epicentral distance in km"),
     ]
 
@@ -798,7 +817,7 @@ def generate_quality_report(
             "total": n_pairs,
             "share_or_rate": "",
             "spread_std": round(t_std, 3),
-            "notes": f"median={round(t_med, 3)}, iqr={round(t_iqr, 3)}, min={round(t_min, 3)}, max={round(t_max, 3)}",
+            "notes": f"absolute difference; median={round(t_med, 3)}, iqr={round(t_iqr, 3)}, min={round(t_min, 3)}, max={round(t_max, 3)}",
         })
 
         # Magnitude diff
@@ -813,7 +832,7 @@ def generate_quality_report(
             "total": n_pairs,
             "share_or_rate": "",
             "spread_std": round(m_std, 3),
-            "notes": f"median={round(m_med, 3)}, iqr={round(m_iqr, 3)}, min={round(m_min, 3)}, max={round(m_max, 3)}",
+            "notes": f"absolute difference; median={round(m_med, 3)}, iqr={round(m_iqr, 3)}, min={round(m_min, 3)}, max={round(m_max, 3)}",
         })
 
         # Depth diff
@@ -828,7 +847,7 @@ def generate_quality_report(
             "total": n_pairs,
             "share_or_rate": round(len(d_vals) / n_pairs, 4) if n_pairs > 0 else 0.0,
             "spread_std": round(d_std, 3),
-            "notes": f"median={round(d_med, 3)}, iqr={round(d_iqr, 3)}, min={round(d_min, 3)}, max={round(d_max, 3)}",
+            "notes": f"absolute difference; median={round(d_med, 3)}, iqr={round(d_iqr, 3)}, min={round(d_min, 3)}, max={round(d_max, 3)}",
         })
 
     # -------------------------------------------------------------------------

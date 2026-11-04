@@ -3,52 +3,108 @@ section,category,decade_or_year,metric,value,count,total,share_or_rate,spread_st
 1. Event Counts by Source,usgs_only,all,count,78675,78675,202308,0.3889,,Share of total unified events (38.89%)
 1. Event Counts by Source,emsc_only,all,count,14328,14328,202308,0.0708,,Share of total unified events (7.08%)
 1. Event Counts by Source,total_clean,all,count,202308,202308,202308,1.0,,Share of total unified events (100.00%)
-2. Match Rate Per Year,annual,2000,match_rate,0.0363,183,5039,0.0363,,"both=183, usgs_only=4827, emsc_only=29"
-2. Match Rate Per Year,annual,2001,match_rate,0.0377,179,4753,0.0377,,"both=179, usgs_only=4501, emsc_only=73"
-2. Match Rate Per Year,annual,2002,match_rate,0.0407,204,5008,0.0407,,"both=204, usgs_only=4759, emsc_only=45"
-2. Match Rate Per Year,annual,2003,match_rate,0.0363,188,5175,0.0363,,"both=188, usgs_only=4947, emsc_only=40"
-2. Match Rate Per Year,annual,2004,match_rate,0.1052,665,6321,0.1052,,"both=665, usgs_only=5518, emsc_only=138"
-2. Match Rate Per Year,annual,2005,match_rate,0.3628,2983,8222,0.3628,,"both=2983, usgs_only=4895, emsc_only=344"
-2. Match Rate Per Year,annual,2006,match_rate,0.4236,3181,7510,0.4236,,"both=3181, usgs_only=3894, emsc_only=435"
-2. Match Rate Per Year,annual,2007,match_rate,0.5003,3872,7740,0.5003,,"both=3872, usgs_only=3402, emsc_only=466"
-2. Match Rate Per Year,annual,2008,match_rate,0.5358,3701,6908,0.5358,,"both=3701, usgs_only=2606, emsc_only=601"
-2. Match Rate Per Year,annual,2009,match_rate,0.5946,3927,6604,0.5946,,"both=3927, usgs_only=2126, emsc_only=551"
-2. Match Rate Per Year,annual,2010,match_rate,0.55,4248,7723,0.55,,"both=4248, usgs_only=2966, emsc_only=509"
-2. Match Rate Per Year,annual,2011,match_rate,0.5502,5460,9924,0.5502,,"both=5460, usgs_only=4124, emsc_only=340"
-2. Match Rate Per Year,annual,2012,match_rate,0.5988,4651,7767,0.5988,,"both=4651, usgs_only=2537, emsc_only=579"
-2. Match Rate Per Year,annual,2013,match_rate,0.5758,4596,7982,0.5758,,"both=4596, usgs_only=2613, emsc_only=773"
-2. Match Rate Per Year,annual,2014,match_rate,0.5359,4831,9014,0.5359,,"both=4831, usgs_only=3502, emsc_only=681"
-2. Match Rate Per Year,annual,2015,match_rate,0.591,4580,7749,0.591,,"both=4580, usgs_only=2573, emsc_only=596"
-2. Match Rate Per Year,annual,2016,match_rate,0.6146,5016,8162,0.6146,,"both=5016, usgs_only=2422, emsc_only=724"
-2. Match Rate Per Year,annual,2017,match_rate,0.6746,4708,6979,0.6746,,"both=4708, usgs_only=1663, emsc_only=608"
-2. Match Rate Per Year,annual,2018,match_rate,0.6763,5523,8167,0.6763,,"both=5523, usgs_only=1986, emsc_only=658"
-2. Match Rate Per Year,annual,2019,match_rate,0.6605,5225,7911,0.6605,,"both=5225, usgs_only=1986, emsc_only=700"
-2. Match Rate Per Year,annual,2020,match_rate,0.6908,5052,7313,0.6908,,"both=5052, usgs_only=1458, emsc_only=803"
-2. Match Rate Per Year,annual,2021,match_rate,0.6463,6285,9725,0.6463,,"both=6285, usgs_only=2674, emsc_only=766"
-2. Match Rate Per Year,annual,2022,match_rate,0.7167,6142,8570,0.7167,,"both=6142, usgs_only=1623, emsc_only=805"
-2. Match Rate Per Year,annual,2023,match_rate,0.7006,5920,8450,0.7006,,"both=5920, usgs_only=1723, emsc_only=807"
-2. Match Rate Per Year,annual,2024,match_rate,0.7128,5029,7055,0.7128,,"both=5029, usgs_only=1368, emsc_only=658"
-2. Match Rate Per Year,annual,2025,match_rate,0.7471,7113,9521,0.7471,,"both=7113, usgs_only=1445, emsc_only=963"
-2. Match Rate Per Year,annual,2026,match_rate,0.8328,5843,7016,0.8328,,"both=5843, usgs_only=537, emsc_only=636"
+2. Match Rate Per Year,annual,2000,usgs_match_rate,0.0365,183,5010,0.0365,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2000,emsc_match_rate,0.8632,183,212,0.8632,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2000,matched_share_of_union,0.0363,183,5039,0.0363,,"both=183, usgs_only=4827, emsc_only=29"
+2. Match Rate Per Year,annual,2001,usgs_match_rate,0.0382,179,4680,0.0382,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2001,emsc_match_rate,0.7103,179,252,0.7103,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2001,matched_share_of_union,0.0377,179,4753,0.0377,,"both=179, usgs_only=4501, emsc_only=73"
+2. Match Rate Per Year,annual,2002,usgs_match_rate,0.0411,204,4963,0.0411,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2002,emsc_match_rate,0.8193,204,249,0.8193,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2002,matched_share_of_union,0.0407,204,5008,0.0407,,"both=204, usgs_only=4759, emsc_only=45"
+2. Match Rate Per Year,annual,2003,usgs_match_rate,0.0366,188,5135,0.0366,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2003,emsc_match_rate,0.8246,188,228,0.8246,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2003,matched_share_of_union,0.0363,188,5175,0.0363,,"both=188, usgs_only=4947, emsc_only=40"
+2. Match Rate Per Year,annual,2004,usgs_match_rate,0.1076,665,6183,0.1076,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2004,emsc_match_rate,0.8281,665,803,0.8281,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2004,matched_share_of_union,0.1052,665,6321,0.1052,,"both=665, usgs_only=5518, emsc_only=138"
+2. Match Rate Per Year,annual,2005,usgs_match_rate,0.3786,2983,7878,0.3786,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2005,emsc_match_rate,0.8966,2983,3327,0.8966,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2005,matched_share_of_union,0.3628,2983,8222,0.3628,,"both=2983, usgs_only=4895, emsc_only=344"
+2. Match Rate Per Year,annual,2006,usgs_match_rate,0.4496,3181,7075,0.4496,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2006,emsc_match_rate,0.8797,3181,3616,0.8797,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2006,matched_share_of_union,0.4236,3181,7510,0.4236,,"both=3181, usgs_only=3894, emsc_only=435"
+2. Match Rate Per Year,annual,2007,usgs_match_rate,0.5323,3872,7274,0.5323,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2007,emsc_match_rate,0.8926,3872,4338,0.8926,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2007,matched_share_of_union,0.5003,3872,7740,0.5003,,"both=3872, usgs_only=3402, emsc_only=466"
+2. Match Rate Per Year,annual,2008,usgs_match_rate,0.5868,3701,6307,0.5868,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2008,emsc_match_rate,0.8603,3701,4302,0.8603,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2008,matched_share_of_union,0.5358,3701,6908,0.5358,,"both=3701, usgs_only=2606, emsc_only=601"
+2. Match Rate Per Year,annual,2009,usgs_match_rate,0.6488,3927,6053,0.6488,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2009,emsc_match_rate,0.877,3927,4478,0.877,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2009,matched_share_of_union,0.5946,3927,6604,0.5946,,"both=3927, usgs_only=2126, emsc_only=551"
+2. Match Rate Per Year,annual,2010,usgs_match_rate,0.5889,4248,7214,0.5889,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2010,emsc_match_rate,0.893,4248,4757,0.893,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2010,matched_share_of_union,0.55,4248,7723,0.55,,"both=4248, usgs_only=2966, emsc_only=509"
+2. Match Rate Per Year,annual,2011,usgs_match_rate,0.5697,5460,9584,0.5697,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2011,emsc_match_rate,0.9414,5460,5800,0.9414,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2011,matched_share_of_union,0.5502,5460,9924,0.5502,,"both=5460, usgs_only=4124, emsc_only=340"
+2. Match Rate Per Year,annual,2012,usgs_match_rate,0.6471,4651,7188,0.6471,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2012,emsc_match_rate,0.8893,4651,5230,0.8893,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2012,matched_share_of_union,0.5988,4651,7767,0.5988,,"both=4651, usgs_only=2537, emsc_only=579"
+2. Match Rate Per Year,annual,2013,usgs_match_rate,0.6375,4596,7209,0.6375,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2013,emsc_match_rate,0.856,4596,5369,0.856,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2013,matched_share_of_union,0.5758,4596,7982,0.5758,,"both=4596, usgs_only=2613, emsc_only=773"
+2. Match Rate Per Year,annual,2014,usgs_match_rate,0.5797,4831,8333,0.5797,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2014,emsc_match_rate,0.8765,4831,5512,0.8765,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2014,matched_share_of_union,0.5359,4831,9014,0.5359,,"both=4831, usgs_only=3502, emsc_only=681"
+2. Match Rate Per Year,annual,2015,usgs_match_rate,0.6403,4580,7153,0.6403,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2015,emsc_match_rate,0.8849,4580,5176,0.8849,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2015,matched_share_of_union,0.591,4580,7749,0.591,,"both=4580, usgs_only=2573, emsc_only=596"
+2. Match Rate Per Year,annual,2016,usgs_match_rate,0.6744,5016,7438,0.6744,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2016,emsc_match_rate,0.8739,5016,5740,0.8739,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2016,matched_share_of_union,0.6146,5016,8162,0.6146,,"both=5016, usgs_only=2422, emsc_only=724"
+2. Match Rate Per Year,annual,2017,usgs_match_rate,0.739,4708,6371,0.739,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2017,emsc_match_rate,0.8856,4708,5316,0.8856,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2017,matched_share_of_union,0.6746,4708,6979,0.6746,,"both=4708, usgs_only=1663, emsc_only=608"
+2. Match Rate Per Year,annual,2018,usgs_match_rate,0.7355,5523,7509,0.7355,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2018,emsc_match_rate,0.8935,5523,6181,0.8935,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2018,matched_share_of_union,0.6763,5523,8167,0.6763,,"both=5523, usgs_only=1986, emsc_only=658"
+2. Match Rate Per Year,annual,2019,usgs_match_rate,0.7246,5225,7211,0.7246,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2019,emsc_match_rate,0.8819,5225,5925,0.8819,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2019,matched_share_of_union,0.6605,5225,7911,0.6605,,"both=5225, usgs_only=1986, emsc_only=700"
+2. Match Rate Per Year,annual,2020,usgs_match_rate,0.776,5052,6510,0.776,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2020,emsc_match_rate,0.8629,5052,5855,0.8629,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2020,matched_share_of_union,0.6908,5052,7313,0.6908,,"both=5052, usgs_only=1458, emsc_only=803"
+2. Match Rate Per Year,annual,2021,usgs_match_rate,0.7015,6285,8959,0.7015,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2021,emsc_match_rate,0.8914,6285,7051,0.8914,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2021,matched_share_of_union,0.6463,6285,9725,0.6463,,"both=6285, usgs_only=2674, emsc_only=766"
+2. Match Rate Per Year,annual,2022,usgs_match_rate,0.791,6142,7765,0.791,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2022,emsc_match_rate,0.8841,6142,6947,0.8841,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2022,matched_share_of_union,0.7167,6142,8570,0.7167,,"both=6142, usgs_only=1623, emsc_only=805"
+2. Match Rate Per Year,annual,2023,usgs_match_rate,0.7746,5920,7643,0.7746,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2023,emsc_match_rate,0.88,5920,6727,0.88,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2023,matched_share_of_union,0.7006,5920,8450,0.7006,,"both=5920, usgs_only=1723, emsc_only=807"
+2. Match Rate Per Year,annual,2024,usgs_match_rate,0.7861,5029,6397,0.7861,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2024,emsc_match_rate,0.8843,5029,5687,0.8843,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2024,matched_share_of_union,0.7128,5029,7055,0.7128,,"both=5029, usgs_only=1368, emsc_only=658"
+2. Match Rate Per Year,annual,2025,usgs_match_rate,0.8312,7113,8558,0.8312,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2025,emsc_match_rate,0.8808,7113,8076,0.8808,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2025,matched_share_of_union,0.7471,7113,9521,0.7471,,"both=7113, usgs_only=1445, emsc_only=963"
+2. Match Rate Per Year,annual,2026,usgs_match_rate,0.9158,5843,6380,0.9158,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2026,emsc_match_rate,0.9018,5843,6479,0.9018,,matched events divided by that catalog's own events in the year
+2. Match Rate Per Year,annual,2026,matched_share_of_union,0.8328,5843,7016,0.8328,,"both=5843, usgs_only=537, emsc_only=636"
 3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,matched_pairs_count,107886,107886,176012,0.6129,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 107886 matched pairs (>=2005)
 3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,usgs_only_count,54123,54123,176012,0.3075,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 54123 unmatched USGS events
 3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,emsc_only_count,14003,14003,176012,0.0796,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | 14003 unmatched EMSC events
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,cross_source_match_rate,0.6129,107886,176012,0.6129,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Overall match rate 61.29% (>=2005)
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_time_diff_seconds,1.429,107886,107886,,2.23,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean origin time difference in seconds
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_magnitude_diff,0.075,107886,107886,,0.11,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean magnitude difference
-3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_depth_diff_km,9.668,107886,107886,,16.479,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean depth difference in km
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,matched_share_of_union,0.6129,107886,176012,0.6129,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Matched pairs as a share of the union of both catalogs: 61.29% (>=2005); not a per-source match rate
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,usgs_match_rate,0.6659,107886,162009,0.6659,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Share of USGS events that have an EMSC partner: 66.59% (>=2005); depends on EMSC coverage
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,emsc_match_rate,0.8851,107886,121889,0.8851,,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Share of EMSC events that have a USGS partner: 88.51% (>=2005)
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_time_diff_seconds,1.429,107886,107886,,2.23,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean absolute origin time difference in seconds
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_magnitude_diff,0.075,107886,107886,,0.11,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean absolute magnitude difference
+3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_depth_diff_km,9.668,107886,107886,,16.479,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean absolute depth difference in km
 3. Headline Cross-Source Statistics (2005 Onward),headline_2005_onward,2005+,mean_distance_km,11.926,107886,107886,,14.418,Note: EMSC coverage is incomplete before 2005; headline statistics restricted to 2005 onward. | Mean epicentral distance in km
 4. Match Rate by EMSC Author (NEIC vs Other),NEIC,all,match_rate,0.9068,17570,19375,0.9068,,NEIC events are USGS own data; acts as sanity check for matching thresholds
 4. Match Rate by EMSC Author (NEIC vs Other),OTHER,all,match_rate,0.8799,91735,104258,0.8799,,"All other EMSC contributing authors (regional networks, etc.)"
-5. Matched Differences by Decade,matched_pairs,2000s,time_diff_seconds,2.366,19083,19083,,3.285,"median=1.52, iqr=2.56, min=0.0, max=58.31"
-5. Matched Differences by Decade,matched_pairs,2000s,magnitude_diff,0.139,19083,19083,,0.148,"median=0.1, iqr=0.2, min=0.0, max=1.0"
-5. Matched Differences by Decade,matched_pairs,2000s,depth_diff_km,16.573,19083,19083,1.0,27.48,"median=9.0, iqr=21.0, min=0.0, max=545.0"
-5. Matched Differences by Decade,matched_pairs,2010s,time_diff_seconds,1.402,48838,48838,,2.024,"median=0.8, iqr=1.48, min=0.0, max=58.65"
-5. Matched Differences by Decade,matched_pairs,2010s,magnitude_diff,0.078,48838,48838,,0.103,"median=0.1, iqr=0.1, min=0.0, max=1.0"
-5. Matched Differences by Decade,matched_pairs,2010s,depth_diff_km,9.788,48838,48838,1.0,13.492,"median=5.2, iqr=13.33, min=0.0, max=375.0"
-5. Matched Differences by Decade,matched_pairs,2020s,time_diff_seconds,1.071,41384,41384,,1.729,"median=0.56, iqr=1.155, min=0.0, max=58.929"
-5. Matched Differences by Decade,matched_pairs,2020s,magnitude_diff,0.046,41384,41384,,0.087,"median=0.0, iqr=0.1, min=0.0, max=1.0"
-5. Matched Differences by Decade,matched_pairs,2020s,depth_diff_km,6.564,41384,41384,1.0,11.488,"median=1.769, iqr=8.348, min=0.0, max=259.0"
+5. Matched Differences by Decade,matched_pairs,2000s,time_diff_seconds,2.366,19083,19083,,3.285,"absolute difference; median=1.52, iqr=2.56, min=0.0, max=58.31"
+5. Matched Differences by Decade,matched_pairs,2000s,magnitude_diff,0.139,19083,19083,,0.148,"absolute difference; median=0.1, iqr=0.2, min=0.0, max=1.0"
+5. Matched Differences by Decade,matched_pairs,2000s,depth_diff_km,16.573,19083,19083,1.0,27.48,"absolute difference; median=9.0, iqr=21.0, min=0.0, max=545.0"
+5. Matched Differences by Decade,matched_pairs,2010s,time_diff_seconds,1.402,48838,48838,,2.024,"absolute difference; median=0.8, iqr=1.48, min=0.0, max=58.65"
+5. Matched Differences by Decade,matched_pairs,2010s,magnitude_diff,0.078,48838,48838,,0.103,"absolute difference; median=0.1, iqr=0.1, min=0.0, max=1.0"
+5. Matched Differences by Decade,matched_pairs,2010s,depth_diff_km,9.788,48838,48838,1.0,13.492,"absolute difference; median=5.2, iqr=13.33, min=0.0, max=375.0"
+5. Matched Differences by Decade,matched_pairs,2020s,time_diff_seconds,1.071,41384,41384,,1.729,"absolute difference; median=0.56, iqr=1.155, min=0.0, max=58.929"
+5. Matched Differences by Decade,matched_pairs,2020s,magnitude_diff,0.046,41384,41384,,0.087,"absolute difference; median=0.0, iqr=0.1, min=0.0, max=1.0"
+5. Matched Differences by Decade,matched_pairs,2020s,depth_diff_km,6.564,41384,41384,1.0,11.488,"absolute difference; median=1.769, iqr=8.348, min=0.0, max=259.0"
 6. Default Depth Share by Source and Decade,both,2000s,depth_is_default_share,0.2664,5084,19083,0.2664,,5084 of 19083 events have depth_km == 10 exactly (26.64%)
 6. Default Depth Share by Source and Decade,emsc_only,2000s,depth_is_default_share,0.1653,450,2722,0.1653,,450 of 2722 events have depth_km == 10 exactly (16.53%)
 6. Default Depth Share by Source and Decade,usgs_only,2000s,depth_is_default_share,0.2573,10673,41475,0.2573,,10673 of 41475 events have depth_km == 10 exactly (25.73%)

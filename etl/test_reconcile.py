@@ -62,12 +62,13 @@ from etl.reconcile import (
 # 1. Constants & Math Tests
 # =============================================================================
 def test_threshold_constants():
-    """Verify that the matching threshold constants are properly defined."""
+    """Verify the final matching gates (chosen with the threshold study): 60 s, 150 km, 1.0 magnitude."""
+    from etl.reconcile import MAX_MAG_DIFF
+
     assert MAX_TIME_DIFF_SECONDS == 60.0
     assert TIME_WINDOW_SECONDS == 60.0
-    assert MAX_DISTANCE_KM == 100.0
-    assert MAX_MAG_DIFF == 0.5
-    assert DEFAULT_DEPTH_KM == 10.0
+    assert MAX_DISTANCE_KM == 150.0
+    assert MAX_MAG_DIFF == 1.0
 
 
 def test_haversine_distance():
@@ -284,87 +285,47 @@ def test_two_usgs_compete_for_one_emsc():
 
 
 def test_threshold_boundaries():
-    """Verify boundary conditions for time, distance, and magnitude."""
-    # 1. Time boundary: 60s matches, 60.1s does NOT match
-    u_base = {
-        "event_id": "u1",
-        "event_time": "2026-01-01T00:00:00Z",
-        "latitude": 0.0,
-        "longitude": 0.0,
-        "magnitude": 5.0,
-    }
+    """Boundary conditions for the final gates: 60 s, 150 km and 1.0 magnitude units."""
 
-    e_exact_60 = [{
-        "event_id": "e_60",
-        "event_time": "2026-01-01T00:01:00Z",  # Exactly 60s
-        "latitude": 0.0,
-        "longitude": 0.0,
-        "magnitude": 5.0,
-    }]
-    m_60, _, _ = match_events([u_base], e_exact_60)
-    assert len(m_60) == 1
+    def usgs():
+        return {
+            "event_id": "u1",
+            "event_time": "2026-01-01T00:00:00Z",
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "magnitude": 5.0,
+        }
 
-    e_over_60 = [{
-        "event_id": "e_61",
-        "event_time": "2026-01-01T00:01:00.100Z",  # 60.1s
-        "latitude": 0.0,
-        "longitude": 0.0,
-        "magnitude": 5.0,
-    }]
-    m_over_60, u_un, e_un = match_events([u_base], e_over_60)
-    assert len(m_over_60) == 0
+    def emsc(event_id, time="2026-01-01T00:00:00Z", lon=0.0, mag=5.0):
+        return {
+            "event_id": event_id,
+            "event_time": time,
+            "latitude": 0.0,
+            "longitude": lon,
+            "magnitude": mag,
+        }
+
+    # 1. Time: exactly 60 s matches, 60.1 s does not
+    m, _, _ = match_events([usgs()], [emsc("e_60", time="2026-01-01T00:01:00Z")])
+    assert len(m) == 1
+    m, u_un, e_un = match_events([usgs()], [emsc("e_61", time="2026-01-01T00:01:00.100Z")])
+    assert len(m) == 0
     assert len(u_un) == 1
     assert len(e_un) == 1
 
-    # 2. Distance boundary: 99 km matches, 101 km does NOT match
-    # At lat=0, 1 deg lon = ~111.19 km.
-    # 0.89 deg ~ 98.96 km (<100 km).
-    # 0.92 deg ~ 102.3 km (>100 km).
-    e_under_100km = [{
-        "event_id": "e_99km",
-        "event_time": "2026-01-01T00:00:00Z",
-        "latitude": 0.0,
-        "longitude": 0.89,
-        "magnitude": 5.0,
-    }]
-    m_dist_ok, _, _ = match_events([u_base], e_under_100km)
-    assert len(m_dist_ok) == 1
+    # 2. Distance: at the equator 1 degree of longitude is about 111.19 km
+    m, _, _ = match_events([usgs()], [emsc("e_149km", lon=1.34)])  # about 149.0 km
+    assert len(m) == 1
+    m, _, _ = match_events([usgs()], [emsc("e_151km", lon=1.36)])  # about 151.2 km
+    assert len(m) == 0
 
-    e_over_100km = [{
-        "event_id": "e_101km",
-        "event_time": "2026-01-01T00:00:00Z",
-        "latitude": 0.0,
-        "longitude": 0.92,
-        "magnitude": 5.0,
-    }]
-    m_dist_fail, _, _ = match_events([u_base], e_over_100km)
-    assert len(m_dist_fail) == 0
-
-    # 3. Magnitude boundary: 0.50 matches, 0.51 does NOT match
-    e_mag_050 = [{
-        "event_id": "e_mag_05",
-        "event_time": "2026-01-01T00:00:00Z",
-        "latitude": 0.0,
-        "longitude": 0.0,
-        "magnitude": 5.5,  # diff = 0.5
-    }]
-    m_mag_ok, _, _ = match_events([u_base], e_mag_050)
-    assert len(m_mag_ok) == 1
-
-    e_mag_051 = [{
-        "event_id": "e_mag_051",
-        "event_time": "2026-01-01T00:00:00Z",
-        "latitude": 0.0,
-        "longitude": 0.0,
-        "magnitude": 5.51,  # diff = 0.51
-    }]
-    m_mag_fail, _, _ = match_events([u_base], e_mag_051)
-    assert len(m_mag_fail) == 0
+    # 3. Magnitude: a difference of 0.9 matches, 1.1 does not
+    m, _, _ = match_events([usgs()], [emsc("e_mag_09", mag=5.9)])
+    assert len(m) == 1
+    m, _, _ = match_events([usgs()], [emsc("e_mag_11", mag=6.1)])
+    assert len(m) == 0
 
 
-# =============================================================================
-# 3. Clean Record Building Tests
-# =============================================================================
 def test_build_clean_records_sources_and_preferences():
     """
     Verify clean records:
@@ -817,4 +778,3 @@ def test_replace_clean_records_date_range():
         event_ids = [r[0] for r in rows]
         # 'old_jan' should be deleted, 'new_jan' inserted, 'keep_feb' preserved
         assert event_ids == ["keep_feb", "new_jan"]
-
