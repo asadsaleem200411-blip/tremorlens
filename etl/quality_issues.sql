@@ -1,3 +1,4 @@
+-- Soft warnings: values that are possible but doubtful. Rebuilt from the other tables every time.
 DROP TABLE IF EXISTS quality_issues;
 
 CREATE TABLE quality_issues (
@@ -56,6 +57,12 @@ FROM events_clean c
 JOIN usgs_events u ON u.event_id = c.matched_usgs_id
 JOIN emsc_events e ON e.event_id = c.matched_emsc_id
 WHERE c.source = 'both' AND abs(u.depth_km - e.depth_km) > 100;
+
+-- 7. EMSC depth deeper than 700 km (the deepest USGS depth is 700.9 km; 750 km looks like a cap of the location method)
+INSERT INTO quality_issues (source, event_id, event_time, issue, detail)
+SELECT 'emsc', event_id, event_time, 'depth_over_700km', 'depth_km = ' || depth_km::text
+FROM emsc_events
+WHERE depth_km > 700;
 
 CREATE INDEX quality_issues_issue_idx ON quality_issues (issue);
 
