@@ -1,10 +1,20 @@
-.venv
+# Legacy Streamlit application
+app/
+.streamlit/
+
+# Python environment and secrets
+.venv/
 .env
+
+# Data files
 data/
 
-# Python bytecode & cache
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 .ipynb_checkpoints/
-.streamlit/secrets.toml
+.pytest_cache/
+
+# Frontend dependencies
+frontend/node_modules/
