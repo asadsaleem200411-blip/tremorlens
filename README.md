@@ -20,6 +20,7 @@ TremorLens combines a React web interface with a FastAPI backend and a PostgreSQ
 - [Environment Configuration](#environment-configuration)
 - [Run Locally](#run-locally)
 - [API Checks](#api-checks)
+- [Performance and Caching](#performance-and-caching)
 - [Database and ETL](#database-and-etl)
 - [Production Deployment](#production-deployment)
 - [Git and Security](#git-and-security)
@@ -223,6 +224,39 @@ With the backend running, open:
 - API documentation: `http://127.0.0.1:8000/docs`
 
 The health endpoint should report that the database is connected. If it does not, check the local `.env` configuration, database availability, and required tables.
+
+## Performance and Caching
+
+The React frontend includes session-only API caching and request optimizations to reduce
+unnecessary network traffic and improve dashboard responsiveness.
+
+### API response cache
+
+- Non-live API responses are cached in browser memory for the current page session.
+- The cache uses **LRU (Least Recently Used) eviction** and is bounded to **24 entries**
+  and approximately **24 MB** of serialized response data.
+- Responses larger than the cache memory limit are not stored.
+- Repeated requests for the same API path can reuse the cached response.
+- Identical requests already in progress are shared instead of starting duplicate fetches.
+- Live earthquake feed requests bypass the cache so the live feed can stay fresh.
+- A manual refresh clears the in-memory API cache so the selected page can request fresh data.
+- The cache is not persistent: reloading or closing the browser page starts a new session.
+
+### Global Explorer loading
+
+- Year and minimum-magnitude filters are applied by the backend for the Global Explorer.
+- Filter changes are debounced by **250 milliseconds**; rapid slider movement does not trigger
+  a request for every intermediate value.
+- A newer filter selection cancels the previous in-progress request.
+- Each settled filter selection requests one page of up to **3,000 most recent matching events**,
+  rather than downloading the entire catalogue.
+- The event counter reports the exact total number of matching catalogue records separately
+  from the records loaded for the map and event table.
+
+### Regional Explorer
+
+The existing Pakistan & Hindu Kush Explorer data-loading and filtering path is retained.
+Its regional charts and visualizations continue to use the regional catalogue data path.
 
 ## Database and ETL
 
