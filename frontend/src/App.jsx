@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip as LeafletTooltip } from 'react-leaflet'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip as LeafletTooltip, useMap } from 'react-leaflet'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts'
 import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, BarChart3, ChevronDown, CircleDot, Clock3, Database, Globe2, Layers3, Map as MapIcon, Menu, Moon, Radio, RefreshCw, Search, ShieldCheck, Waves, X } from 'lucide-react'
 
@@ -18,12 +18,13 @@ const nav = [
 const fmt = n => n == null ? '—' : Number(n).toLocaleString('en-US')
 const dateFmt = value => value ? new Date(value).toLocaleString() : 'Not available'
 
-// Keep API responses in memory so changing tabs does not repeatedly reload
-// the same catalog/analysis data. Live feeds use a shorter freshness window.
+// Session-only API cache with bounded memory use (LRU eviction).
+// Live feeds deliberately bypass this cache so they remain fresh.
 const apiResponseCache = new Map()
 const apiInFlight = new Map()
-const API_CACHE_TTL = 5 * 60 * 1000
-const LIVE_CACHE_TTL = 30 * 1000
+const API_CACHE_MAX_ENTRIES = 24
+const API_CACHE_MAX_BYTES = 24 * 1024 * 1024
+let apiCacheBytes = 0
 let activeApiRequests = 0
 const apiLoadingListeners = new Set()
 function notifyApiLoading() { apiLoadingListeners.forEach(listener => listener(activeApiRequests > 0)) }
@@ -31,13 +32,38 @@ function subscribeApiLoading(listener) { apiLoadingListeners.add(listener); list
 
 function clearApiCache() {
   apiResponseCache.clear()
+  apiCacheBytes = 0
+}
+
+function cacheApiResponse(path, data) {
+  let serialized
+  try { serialized = JSON.stringify(data) } catch { return }
+  const bytes = serialized.length * 2 // conservative UTF-16 estimate
+  if (bytes > API_CACHE_MAX_BYTES) return // don't retain a single oversized response
+  const previous = apiResponseCache.get(path)
+  if (previous) {
+    apiCacheBytes -= previous.bytes
+    apiResponseCache.delete(path)
+  }
+  while (apiResponseCache.size >= API_CACHE_MAX_ENTRIES || apiCacheBytes + bytes > API_CACHE_MAX_BYTES) {
+    const oldestKey = apiResponseCache.keys().next().value
+    if (oldestKey === undefined) break
+    const oldest = apiResponseCache.get(oldestKey)
+    apiCacheBytes -= oldest.bytes
+    apiResponseCache.delete(oldestKey)
+  }
+  apiResponseCache.set(path, { data, bytes })
+  apiCacheBytes += bytes
 }
 
 async function api(path, signal, { force = false } = {}) {
-  const now = Date.now()
-  const cached = apiResponseCache.get(path)
-  if (!force && cached && cached.expiresAt > now) return cached.data
-
+  const isLive = path.startsWith('/api/live')
+  if (!force && !isLive && apiResponseCache.has(path)) {
+    const cached = apiResponseCache.get(path)
+    apiResponseCache.delete(path)
+    apiResponseCache.set(path, cached) // mark as most recently used
+    return cached.data
+  }
   if (!force && apiInFlight.has(path)) return apiInFlight.get(path)
 
   activeApiRequests += 1
@@ -49,15 +75,12 @@ async function api(path, signal, { force = false } = {}) {
       throw new Error(body.detail || `Request failed (${res.status})`)
     }
     const data = await res.json()
-    const ttl = path.startsWith('/api/live') ? LIVE_CACHE_TTL : API_CACHE_TTL
-    apiResponseCache.set(path, { data, expiresAt: Date.now() + ttl })
+    if (!isLive) cacheApiResponse(path, data)
     return data
   })()
-
   apiInFlight.set(path, request)
-  try {
-    return await request
-  } finally {
+  try { return await request }
+  finally {
     if (apiInFlight.get(path) === request) apiInFlight.delete(path)
     activeApiRequests = Math.max(0, activeApiRequests - 1)
     notifyApiLoading()
@@ -69,10 +92,24 @@ function Stat({ label, value, note, icon: Icon, tone = 'orange' }) {
 }
 function Panel({ title, subtitle, action, children, className = '' }) { return <section className={`panel ${className}`}><div className="panel-head"><div><h3>{title}</h3>{subtitle && <p>{subtitle}</p>}</div>{action}</div>{children}</section> }
 function ChartTip({ active, payload, label }) { if (!active || !payload?.length) return null; return <div className="chart-tip"><b>{label}</b>{payload.map(p => <div key={p.dataKey}><span>{p.name || p.dataKey}</span><strong>{typeof p.value === 'number' ? p.value.toLocaleString(undefined,{maximumFractionDigits:3}) : p.value}</strong></div>)}</div> }
+function MapResizeHandler() {
+  const map = useMap()
+  useEffect(() => {
+    const container = map.getContainer()
+    if (typeof ResizeObserver === 'undefined') {
+      const frame = requestAnimationFrame(() => map.invalidateSize({ pan: false }))
+      return () => cancelAnimationFrame(frame)
+    }
+    const observer = new ResizeObserver(() => map.invalidateSize({ pan: false, debounceMoveend: true }))
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [map])
+  return null
+}
 function EventMap({ events, height = 440 }) {
   const valid = (events || []).filter(e => Number.isFinite(Number(e.latitude)) && Number.isFinite(Number(e.longitude)))
   const center = valid.length ? [Number(valid[0].latitude), Number(valid[0].longitude)] : [20, 0]
-  return <div className="map-wrap" style={{height}}><MapContainer center={center} zoom={2} scrollWheelZoom style={{height:'100%',width:'100%'}}><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>{valid.map((e,i) => <CircleMarker key={e.event_id || i} center={[Number(e.latitude),Number(e.longitude)]} radius={Math.max(3,Math.min(12,(Number(e.magnitude)||1)*1.45))} pathOptions={{color:'#ff9a58',fillColor:'#ff6b35',fillOpacity:.78,weight:1}}><LeafletTooltip direction="top" offset={[0,-7]} opacity={.98}><div className="map-tooltip"><b>M {Number(e.magnitude ?? 0).toFixed(1)} · {e.place || 'Earthquake'}</b><span>{dateFmt(e.event_time || e.time)}</span><span>Depth: {e.depth_km ?? '—'} km</span><span>Lat/Lon: {Number(e.latitude).toFixed(3)}, {Number(e.longitude).toFixed(3)}</span></div></LeafletTooltip><Popup><div className="map-popup"><b>M {Number(e.magnitude ?? 0).toFixed(1)} · {e.place || 'Earthquake'}</b><p>{dateFmt(e.event_time || e.time)}</p><p>Depth: {e.depth_km ?? '—'} km</p><p>Coordinates: {Number(e.latitude).toFixed(4)}, {Number(e.longitude).toFixed(4)}</p><p>Event ID: {e.event_id || 'Not provided'}</p><p>Catalog: {e.source || 'USGS live feed'}</p>{e.url && <a href={e.url} target="_blank" rel="noreferrer">Open source event ↗</a>}</div></Popup></CircleMarker>)}</MapContainer></div>
+  return <div className="map-wrap" style={{height,position:'relative',zIndex:0,isolation:'isolate'}}><MapContainer center={center} zoom={2} scrollWheelZoom style={{height:'100%',width:'100%',position:'relative',zIndex:0}}><MapResizeHandler/><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>{valid.map((e,i) => <CircleMarker key={e.event_id || i} center={[Number(e.latitude),Number(e.longitude)]} radius={Math.max(3,Math.min(12,(Number(e.magnitude)||1)*1.45))} pathOptions={{color:'#ff9a58',fillColor:'#ff6b35',fillOpacity:.78,weight:1}}><LeafletTooltip direction="top" offset={[0,-7]} opacity={.98}><div className="map-tooltip"><b>M {Number(e.magnitude ?? 0).toFixed(1)} · {e.place || 'Earthquake'}</b><span>{dateFmt(e.event_time || e.time)}</span><span>Depth: {e.depth_km ?? '—'} km</span><span>Lat/Lon: {Number(e.latitude).toFixed(3)}, {Number(e.longitude).toFixed(3)}</span></div></LeafletTooltip><Popup><div className="map-popup"><b>M {Number(e.magnitude ?? 0).toFixed(1)} · {e.place || 'Earthquake'}</b><p>{dateFmt(e.event_time || e.time)}</p><p>Depth: {e.depth_km ?? '—'} km</p><p>Coordinates: {Number(e.latitude).toFixed(4)}, {Number(e.longitude).toFixed(4)}</p><p>Event ID: {e.event_id || 'Not provided'}</p><p>Catalog: {e.source || 'USGS live feed'}</p>{e.url && <a href={e.url} target="_blank" rel="noreferrer">Open source event ↗</a>}</div></Popup></CircleMarker>)}</MapContainer></div>
 }
 function Overview({ data, yearly, loading, error }) {
   const m = data?.metrics || {}
@@ -85,18 +122,51 @@ function Overview({ data, yearly, loading, error }) {
     <div className="footnote">Catalog totals describe the connected database snapshot. They are not live counts.</div>
   </>
 }
-function LivePage({ refreshKey = 0 }) {
+function LivePage({ isActive = false, refreshKey = 0 }) {
  const [feed,setFeed]=useState('all_day'),[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(true)
  const load=()=>{setBusy(true);setError('');api(`/api/live?feed=${feed}`).then(setData).catch(e=>setError(e.message)).finally(()=>setBusy(false))}
- useEffect(()=>{load()},[feed,refreshKey])
+ useEffect(()=>{if(!isActive)return;load();const timer=setInterval(load,60000);return ()=>clearInterval(timer)},[isActive,feed,refreshKey])
  const events=data?.events||[]; const strongest=[...events].sort((a,b)=>b.magnitude-a.magnitude)[0]
  return <><div className="page-title"><div><div className="eyebrow">USGS LIVE GEOJSON</div><h1>Live earthquakes</h1><p>Recent events published by the USGS public summary feed.</p></div><select className="select" value={feed} onChange={e=>setFeed(e.target.value)}><option value="all_hour">Past hour</option><option value="all_day">Past day</option><option value="all_week">Past 7 days</option><option value="all_month">Past 30 days</option></select></div>{error&&<div className="alert"><AlertTriangle size={17}/>{error}</div>}<div className="stats-grid three"><Stat label="Events in feed" value={fmt(data?.count)} note="USGS public summary" icon={Radio}/><Stat label="Strongest event" value={strongest?`M ${Number(strongest.magnitude).toFixed(1)}`:'—'} note={strongest?.place||'No event in feed'} icon={Activity}/><Stat label="Feed window" value={feed==='all_hour'?'1 hour':feed==='all_day'?'24 hours':feed==='all_week'?'7 days':'30 days'} note="Selected USGS feed" icon={Clock3}/></div><Panel title="Recent event map" subtitle="Select a marker to inspect event location and details">{busy?<div className="loading">Fetching USGS feed…</div>:<EventMap events={events}/>}</Panel><Panel title="Latest events" subtitle="Sorted by event time"><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Location</th><th>Time (local)</th><th>Depth</th><th>Source</th></tr></thead><tbody>{events.slice(0,30).map(e=><tr key={e.event_id}><td><span className="mag-pill">{Number(e.magnitude).toFixed(1)}</span></td><td>{e.place}</td><td>{dateFmt(e.time)}</td><td>{e.depth_km??'—'} km</td><td><a href={e.url} target="_blank" rel="noreferrer">USGS ↗</a></td></tr>)}</tbody></table></div></Panel></>
 }
 function Explorer({ region='World', refreshKey = 0 }) {
  const [regionName,setRegionName]=useState(region)
- const [yearFrom,setYearFrom]=useState(2000),[yearTo,setYearTo]=useState(new Date().getFullYear()),[mag,setMag]=useState(region==='World'?4:0),[data,setData]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false)
- useEffect(()=>{setBusy(true);setError('');api(`/api/events?region=${encodeURIComponent(regionName)}&year_from=${yearFrom}&year_to=${yearTo}&min_magnitude=${mag}&limit=10000`).then(setData).catch(e=>setError(e.message)).finally(()=>setBusy(false))},[regionName,yearFrom,yearTo,mag,refreshKey])
- const [selected,setSelected]=useState(null)
+ const [yearFrom,setYearFrom]=useState(2000),[yearTo,setYearTo]=useState(new Date().getFullYear()),[mag,setMag]=useState(region==='World'?4:0),[catalog,setCatalog]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[totalMatches,setTotalMatches]=useState(0)
+ const [selected,setSelected]=useState(null),[filterStatus,setFilterStatus]=useState('')
+ // Global Explorer loads a bounded filtered sample. Regional Explorer
+ // deliberately retains its existing, already-working data path and filtering.
+ useEffect(()=>{
+   let cancelled=false
+   const controller=new AbortController()
+   const load=async()=>{
+     setBusy(true);setError('');setTotalMatches(0);setFilterStatus('Applying Global Explorer filters…')
+     try{
+       // Fetch one bounded page only. The API applies all filters and returns
+       // the exact catalogue count separately; never download the full catalogue.
+       const pageSize=3000
+       const params=new URLSearchParams({region:'World',year_from:String(yearFrom),year_to:String(yearTo),min_magnitude:mag.toFixed(1),max_magnitude:'10',limit:String(pageSize),offset:'0'})
+       const result=await api(`/api/events/paged?${params.toString()}`,controller.signal)
+       if(cancelled)return
+       const records=Array.isArray(result.items)?result.items:[]
+       const total=Number(result.total)||0
+       setCatalog(records)
+       setTotalMatches(total)
+       setFilterStatus(`Showing ${records.length.toLocaleString()} of ${total.toLocaleString()} matching events (most recent records)`)
+     }catch(e){if(!cancelled&&e.name!=='AbortError'){setError(e.message);setFilterStatus('Update failed')}}
+     finally{if(!cancelled)setBusy(false)}
+   }
+   const debounceTimer=region==='World'?setTimeout(load,250):null
+   return ()=>{cancelled=true;if(debounceTimer)clearTimeout(debounceTimer);controller.abort()}
+ },region==='World'?[yearFrom,yearTo,mag,refreshKey]:[])
+ useEffect(()=>{
+   if(region==='World')return
+   let cancelled=false
+   setBusy(true);setError('')
+   api(`/api/events?region=${encodeURIComponent(regionName)}&year_from=1900&year_to=2100&min_magnitude=0&limit=10000`).then(rows=>{if(!cancelled){setCatalog(rows);setTotalMatches(rows.length)}}).catch(e=>{if(!cancelled)setError(e.message)}).finally(()=>{if(!cancelled)setBusy(false)})
+   return ()=>{cancelled=true}
+ },[region,regionName,refreshKey])
+ const data=useMemo(()=>region==='World'?catalog:catalog.filter(e=>{const year=new Date(e.event_time).getFullYear();return Number.isFinite(year)&&year>=yearFrom&&year<=yearTo&&Number(e.magnitude)>=mag}),[region,catalog,yearFrom,yearTo,mag])
+ useEffect(()=>{if(!filterStatus)return;const timer=setTimeout(()=>setFilterStatus(''),region==='World'?4500:2200);return ()=>clearTimeout(timer)},[filterStatus,region])
  const regionalBands=useMemo(()=>{const years={};for(const e of data){const y=new Date(e.event_time).getFullYear();if(!Number.isFinite(y))continue;years[y]??={year:y,'4.5–4.9':0,'5.0–5.9':0,'6.0–6.9':0,'7.0+':0};const m=Number(e.magnitude);if(m>=7)years[y]['7.0+']++;else if(m>=6)years[y]['6.0–6.9']++;else if(m>=5)years[y]['5.0–5.9']++;else if(m>=4.5)years[y]['4.5–4.9']++}return Object.values(years).sort((a,b)=>a.year-b.year)},[data])
  const regionalDepths=useMemo(()=>{const bins=Array.from({length:30},(_,i)=>({depth_km:i*10+5,region:0,hindu_kush:0}));for(const e of data){const d=Number(e.depth_km);if(!Number.isFinite(d)||d<0||d>300||[10,30,33,35].includes(d))continue;const i=Math.min(29,Math.floor(d/10));bins[i].region++;if(Number(e.latitude)>=32&&Number(e.latitude)<=38&&Number(e.longitude)>=68&&Number(e.longitude)<=75)bins[i].hindu_kush++}return bins},[data])
  const regionalScatter=useMemo(()=>data.filter(e=>Number(e.latitude)>=32&&Number(e.latitude)<=38&&Number(e.longitude)>=68&&Number(e.longitude)<=75&&e.depth_km!=null&&![10,30,33,35].includes(Number(e.depth_km))).slice(0,1800),[data])
@@ -106,12 +176,12 @@ function Explorer({ region='World', refreshKey = 0 }) {
  const magnitudeSixCount=data.filter(e=>Number(e.magnitude)>=6).length
  const regionalMapData=region==='World'?data:data.filter(e=>![10,30,33,35].includes(Number(e.depth_km)))
  const displayedMapEvents=regionalMapData
- return <><div className="page-title"><div><div className="eyebrow">SPATIAL CATALOG EXPLORER</div><h1>{region==='World'?'Global earthquake explorer':'Pakistan & Hindu Kush'}</h1><p>Explore the unified catalog using time, magnitude and geographic filters.</p></div></div><div className="filter-bar">{region!=='World'&&<label>Region<select value={regionName} onChange={e=>setRegionName(e.target.value)}><option>Pakistan</option><option>Hindu Kush</option><option>South Asia</option></select></label>}<label>From year<input type="number" min="1900" max={yearTo} value={yearFrom} onChange={e=>setYearFrom(Number(e.target.value))}/></label><label>To year<input type="number" min={yearFrom} max="2100" value={yearTo} onChange={e=>setYearTo(Number(e.target.value))}/></label><label className="range-label">Minimum magnitude <b>{mag.toFixed(1)}</b><input type="range" min="0" max="8" step=".1" value={mag} onChange={e=>setMag(Number(e.target.value))}/></label><div className="filter-count"><b>{fmt(data.length)}</b><small>events returned</small></div></div>{region!=='World'&&<div className="stats-grid three"><Stat label="Events in selected region" value={fmt(data.length)} note="Within current filters" icon={Globe2}/><Stat label="Events in latest 12 months" value={fmt(recentRegionCount)} note="Relative to latest catalog event" icon={Clock3} tone="blue"/><Stat label="Magnitude 6 or more" value={fmt(magnitudeSixCount)} note={strongestRegional[0]?`Strongest: M ${Number(strongestRegional[0].magnitude).toFixed(1)}`:'No events returned'} icon={Activity} tone="green"/></div>}{error&&<div className="alert"><AlertTriangle size={17}/>{error}</div>}<Panel title="Earthquake distribution" subtitle="Hover over any marker for a quick summary; click it for full event details. Marker size reflects magnitude.">{busy?<div className="loading">Loading catalog events…</div>:<><div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'0 0 10px',fontSize:12,color:'var(--muted,#9aa6b8)'}}><span>Selected period</span><b>{fmt(displayedMapEvents.length)} events displayed</b></div><EventMap events={displayedMapEvents}/></>}{region!=='World'&&<p className="interpretation">Events with default-like depths (10, 30, 33 and 35 km) are hidden on this regional map, matching the original analysis.</p>}</Panel><Panel title="Largest events in this selection" subtitle="Top events returned by the active filters"><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Location</th><th>Time</th><th>Depth</th><th>Source</th></tr></thead><tbody>{[...data].sort((a,b)=>b.magnitude-a.magnitude).slice(0,20).map(e=><tr key={e.event_id} onClick={()=>setSelected(e)}><td><span className="mag-pill">{Number(e.magnitude).toFixed(1)}</span></td><td>{e.place||'Unknown'}</td><td>{dateFmt(e.event_time)}</td><td>{e.depth_km??'—'} km</td><td>{e.source}</td></tr>)}</tbody></table></div>{selected&&<div className="detail-strip"><b>Selected event:</b> {selected.event_id} · {selected.place} · M {selected.magnitude} <button onClick={()=>setSelected(null)}>Close</button></div>}</Panel>{region!=='World'&&<><div className="content-grid"><Panel title="Regional events per year by magnitude band" subtitle="Counts in the currently selected region, year range and magnitude filter"><div className="chart-box tall"><ResponsiveContainer width="100%" height="100%"><BarChart data={regionalBands}><CartesianGrid strokeDasharray="3 3" stroke="#202b3b"/><XAxis dataKey="year" tick={{fill:'#8995a8',fontSize:10}} interval="preserveStartEnd"/><YAxis tick={{fill:'#8995a8',fontSize:11}}/><Tooltip content={<ChartTip/>}/><Bar dataKey="4.5–4.9" name="4.5–4.9" stackId="r" fill="#60a5fa"/><Bar dataKey="5.0–5.9" name="5.0–5.9" stackId="r" fill="#43c59e"/><Bar dataKey="6.0–6.9" name="6.0–6.9" stackId="r" fill="#ffb35c"/><Bar dataKey="7.0+" name="7.0+" stackId="r" fill="#ff6b35"/></BarChart></ResponsiveContainer></div><p className="interpretation">Counts reflect the current filters and returned catalog records. The latest year may be incomplete.</p></Panel><Panel title="Measured depth distribution" subtitle="Pakistan region compared with the Hindu Kush cluster; default-like depths excluded"><div className="chart-box tall"><ResponsiveContainer width="100%" height="100%"><BarChart data={regionalDepths}><CartesianGrid strokeDasharray="3 3" stroke="#202b3b"/><XAxis dataKey="depth_km" tick={{fill:'#8995a8',fontSize:10}}/><YAxis tick={{fill:'#8995a8',fontSize:11}}/><Tooltip content={<ChartTip/>}/><Bar dataKey="region" name="Selected region" fill="#60a5fa"/><Bar dataKey="hindu_kush" name="Hindu Kush" fill="#ff8a4c"/></BarChart></ResponsiveContainer></div><p className="interpretation">The Hindu Kush region can show intermediate-depth seismicity. This plot excludes the common default-like depths of 10, 30, 33 and 35 km.</p></Panel></div><Panel title="Hindu Kush depth against longitude" subtitle="Each point is a catalog event; default-like depths are excluded"><div className="chart-box tall"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid strokeDasharray="3 3" stroke="#202b3b"/><XAxis type="number" dataKey="longitude" name="Longitude" tick={{fill:'#8995a8',fontSize:10}}/><YAxis type="number" dataKey="depth_km" name="Depth" reversed unit=" km" tick={{fill:'#8995a8',fontSize:10}}/><ZAxis dataKey="magnitude" range={[18,90]}/><Tooltip content={<ChartTip/>}/><Scatter data={regionalScatter} fill="#ff9a58" fillOpacity={.65}/></ScatterChart></ResponsiveContainer></div><p className="interpretation">Depth is plotted downward to match the geological convention. Marker size reflects magnitude.</p></Panel><div className="content-grid"><Panel title="Largest regional events" subtitle="Top 10 by magnitude"><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Time</th><th>Depth</th><th>Location</th></tr></thead><tbody>{strongestRegional.map(e=><tr key={e.event_id}><td>M {Number(e.magnitude).toFixed(1)}</td><td>{dateFmt(e.event_time)}</td><td>{e.depth_km??'—'} km</td><td>{e.place}</td></tr>)}</tbody></table></div></Panel><Panel title="Most recent regional events" subtitle="Latest 15 records"><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Time</th><th>Depth</th><th>Location</th></tr></thead><tbody>{[...data].sort((a,b)=>new Date(b.event_time)-new Date(a.event_time)).slice(0,15).map(e=><tr key={e.event_id}><td>M {Number(e.magnitude).toFixed(1)}</td><td>{dateFmt(e.event_time)}</td><td>{e.depth_km??'—'} km</td><td>{e.place}</td></tr>)}</tbody></table></div></Panel></div></>}</>
+ return <><div className="page-title"><div><div className="eyebrow">SPATIAL CATALOG EXPLORER</div><h1>{region==='World'?'Global earthquake explorer':'Pakistan & Hindu Kush'}</h1><p>Explore the unified catalog using time, magnitude and geographic filters.</p></div></div><div className="filter-bar">{region!=='World'&&<label>Region<select value={regionName} onChange={e=>setRegionName(e.target.value)}><option>Pakistan</option><option>Hindu Kush</option><option>South Asia</option></select></label>}<label>From year<input type="number" min="1900" max={yearTo} value={yearFrom} onChange={e=>setYearFrom(Number(e.target.value))}/></label><label>To year<input type="number" min={yearFrom} max="2100" value={yearTo} onChange={e=>setYearTo(Number(e.target.value))}/></label><label className="range-label">Minimum magnitude <b>{mag.toFixed(1)}</b><input type="range" min="0" max="8" step=".1" value={mag} onChange={e=>setMag(Number(e.target.value))}/></label><div className="filter-count"><b>{fmt(region==='World'?totalMatches:data.length)}</b><small>{region==='World'?'matching events':'events returned'}</small></div>{filterStatus&&<div role="status" aria-live="polite" style={{fontSize:12,color:'#43c59e',fontWeight:600,alignSelf:'center'}}>{filterStatus}</div>}</div>{region!=='World'&&<div className="stats-grid three"><Stat label="Events in selected region" value={fmt(data.length)} note="Within current filters" icon={Globe2}/><Stat label="Events in latest 12 months" value={fmt(recentRegionCount)} note="Relative to latest catalog event" icon={Clock3} tone="blue"/><Stat label="Magnitude 6 or more" value={fmt(magnitudeSixCount)} note={strongestRegional[0]?`Strongest: M ${Number(strongestRegional[0].magnitude).toFixed(1)}`:'No events returned'} icon={Activity} tone="green"/></div>}{error&&<div className="alert"><AlertTriangle size={17}/>{error}</div>}<Panel title="Earthquake distribution" subtitle="Hover over any marker for a quick summary; click it for full event details. Marker size reflects magnitude.">{busy?<div className="loading">Loading catalog events…</div>:<><div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'0 0 10px',fontSize:12,color:'var(--muted,#9aa6b8)'}}><span>Selected period</span><b>{fmt(displayedMapEvents.length)} events displayed</b></div><EventMap events={displayedMapEvents}/></>}{region!=='World'&&<p className="interpretation">Events with default-like depths (10, 30, 33 and 35 km) are hidden on this regional map, matching the original analysis.</p>}</Panel><Panel title={region==='World'?'Largest events in loaded records':'Largest events in this selection'} subtitle={region==='World'?'Top events among the most recent records loaded for the active filters':'Top events returned by the active filters'}><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Location</th><th>Time</th><th>Depth</th><th>Source</th></tr></thead><tbody>{[...data].sort((a,b)=>b.magnitude-a.magnitude).slice(0,20).map(e=><tr key={e.event_id} onClick={()=>setSelected(e)}><td><span className="mag-pill">{Number(e.magnitude).toFixed(1)}</span></td><td>{e.place||'Unknown'}</td><td>{dateFmt(e.event_time)}</td><td>{e.depth_km??'—'} km</td><td>{e.source}</td></tr>)}</tbody></table></div>{selected&&<div className="detail-strip"><b>Selected event:</b> {selected.event_id} · {selected.place} · M {selected.magnitude} <button onClick={()=>setSelected(null)}>Close</button></div>}</Panel>{region!=='World'&&<><div className="content-grid"><Panel title="Regional events per year by magnitude band" subtitle="Counts in the currently selected region, year range and magnitude filter"><div className="chart-box tall"><ResponsiveContainer width="100%" height="100%"><BarChart data={regionalBands}><CartesianGrid strokeDasharray="3 3" stroke="#202b3b"/><XAxis dataKey="year" tick={{fill:'#8995a8',fontSize:10}} interval="preserveStartEnd"/><YAxis tick={{fill:'#8995a8',fontSize:11}}/><Tooltip content={<ChartTip/>}/><Bar dataKey="4.5–4.9" name="4.5–4.9" stackId="r" fill="#60a5fa"/><Bar dataKey="5.0–5.9" name="5.0–5.9" stackId="r" fill="#43c59e"/><Bar dataKey="6.0–6.9" name="6.0–6.9" stackId="r" fill="#ffb35c"/><Bar dataKey="7.0+" name="7.0+" stackId="r" fill="#ff6b35"/></BarChart></ResponsiveContainer></div><p className="interpretation">Counts reflect the current filters and returned catalog records. The latest year may be incomplete.</p></Panel><Panel title="Measured depth distribution" subtitle="Pakistan region compared with the Hindu Kush cluster; default-like depths excluded"><div className="chart-box tall"><ResponsiveContainer width="100%" height="100%"><BarChart data={regionalDepths}><CartesianGrid strokeDasharray="3 3" stroke="#202b3b"/><XAxis dataKey="depth_km" tick={{fill:'#8995a8',fontSize:10}}/><YAxis tick={{fill:'#8995a8',fontSize:11}}/><Tooltip content={<ChartTip/>}/><Bar dataKey="region" name="Selected region" fill="#60a5fa"/><Bar dataKey="hindu_kush" name="Hindu Kush" fill="#ff8a4c"/></BarChart></ResponsiveContainer></div><p className="interpretation">The Hindu Kush region can show intermediate-depth seismicity. This plot excludes the common default-like depths of 10, 30, 33 and 35 km.</p></Panel></div><Panel title="Hindu Kush depth against longitude" subtitle="Each point is a catalog event; default-like depths are excluded"><div className="chart-box tall"><ResponsiveContainer width="100%" height="100%"><ScatterChart><CartesianGrid strokeDasharray="3 3" stroke="#202b3b"/><XAxis type="number" dataKey="longitude" name="Longitude" tick={{fill:'#8995a8',fontSize:10}}/><YAxis type="number" dataKey="depth_km" name="Depth" reversed unit=" km" tick={{fill:'#8995a8',fontSize:10}}/><ZAxis dataKey="magnitude" range={[18,90]}/><Tooltip content={<ChartTip/>}/><Scatter data={regionalScatter} fill="#ff9a58" fillOpacity={.65}/></ScatterChart></ResponsiveContainer></div><p className="interpretation">Depth is plotted downward to match the geological convention. Marker size reflects magnitude.</p></Panel><div className="content-grid"><Panel title="Largest regional events" subtitle="Top 10 by magnitude"><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Time</th><th>Depth</th><th>Location</th></tr></thead><tbody>{strongestRegional.map(e=><tr key={e.event_id}><td>M {Number(e.magnitude).toFixed(1)}</td><td>{dateFmt(e.event_time)}</td><td>{e.depth_km??'—'} km</td><td>{e.place}</td></tr>)}</tbody></table></div></Panel><Panel title="Most recent regional events" subtitle="Latest 15 records"><div className="table-scroll"><table><thead><tr><th>Magnitude</th><th>Time</th><th>Depth</th><th>Location</th></tr></thead><tbody>{[...data].sort((a,b)=>new Date(b.event_time)-new Date(a.event_time)).slice(0,15).map(e=><tr key={e.event_id}><td>M {Number(e.magnitude).toFixed(1)}</td><td>{dateFmt(e.event_time)}</td><td>{e.depth_km??'—'} km</td><td>{e.place}</td></tr>)}</tbody></table></div></Panel></div></>}</>
 }
 function Analysis({ yearly, refreshKey = 0 }) {
  const [quality,setQuality]=useState(null),[comparison,setComparison]=useState(null),[eda,setEda]=useState(null),[period,setPeriod]=useState('recommended'),[mc,setMc]=useState(4.8),[hideDefaults,setHideDefaults]=useState(true),[error,setError]=useState('')
  useEffect(()=>{Promise.all([api('/api/quality/summary'),api('/api/compare/summary')]).then(([q,c])=>{setQuality(q);setComparison(c)}).catch(e=>setError(e.message))},[refreshKey])
- useEffect(()=>{api(`/api/analysis?period=${period}&mc=${mc}&hide_defaults=${hideDefaults}`).then(setEda).catch(e=>setError(e.message))},[period,mc,hideDefaults,refreshKey])
+ useEffect(()=>{const timer=setTimeout(()=>{api(`/api/analysis?period=${period}&mc=${mc}&hide_defaults=${hideDefaults}`).then(setEda).catch(e=>setError(e.message))},250);return ()=>clearTimeout(timer)},[period,mc,hideDefaults,refreshKey])
  const depth=(quality?.default_depths||[]).map(x=>({...x,share:x.total?x.default_like/x.total:0}))
  const bands=useMemo(()=>{const map={};(eda?.annual_magnitude_bands||[]).forEach(x=>{if(x.band==='<4.5')return;map[x.year]??={year:x.year};map[x.year][x.band]=x.count});return Object.values(map)},[eda])
  return <><div className="page-title"><div><div className="eyebrow">EXPLORATORY DATA ANALYSIS</div><h1>Seismic analysis</h1><p>Explore magnitude-frequency behaviour, depth reporting and changes in catalog coverage.</p></div></div>{error&&<div className="alert"><AlertTriangle size={17}/>{error}</div>}
@@ -169,13 +239,35 @@ function WorkflowDiagram() {
 }
 function Methodology() { return <><div className="page-title"><div><div className="eyebrow">TRANSPARENCY & REPRODUCIBILITY</div><h1>Methodology & data</h1><p>How TremorLens collects, validates, reconciles and presents earthquake catalog records.</p></div></div><div className="method-grid"><article className="method-card"><span>01</span><h3>Data sources</h3><p>USGS Earthquake Hazards Program and EMSC SeismicPortal provide the source earthquake catalogs.</p></article><article className="method-card"><span>02</span><h3>ETL & validation</h3><p>The Python pipeline extracts and validates records, then stores them in the project’s Neon-hosted PostgreSQL database.</p></article><article className="method-card"><span>03</span><h3>Reconciliation</h3><p>Events are matched one-to-one using the project’s documented gates: up to 60 seconds, 150 km and 1.0 magnitude unit.</p></article><article className="method-card"><span>04</span><h3>Unified catalog</h3><p>The reconciled catalog is stored in Neon PostgreSQL and exposed through a read-only FastAPI service. The React interface receives data through the API.</p></article></div><WorkflowDiagram/><Panel title="Important interpretation notes" subtitle="Read these before drawing conclusions"><ul className="method-list"><li>EMSC coverage is sparse in earlier years and improves over time; its match rate should not be interpreted as matching quality alone.</li><li>Depths of 10, 30, 33 and 35 km are treated as default-like in the exploratory analysis. They may not represent precisely constrained depths.</li><li>The supplied EDA recommends focusing on 2005 onward and completeness magnitude around 4.8–5.0 for more stable b-value comparisons.</li><li>The aftershock explorer uses a simple spatial and time window; it is not a formal aftershock or declustering catalogue.</li><li>TremorLens does not predict earthquakes and is not an emergency alert service.</li></ul></Panel><Panel title="Data providers"><div className="provider-links"><a href="https://earthquake.usgs.gov/" target="_blank" rel="noreferrer">USGS Earthquake Hazards Program ↗</a><a href="https://www.seismicportal.eu/" target="_blank" rel="noreferrer">EMSC SeismicPortal ↗</a></div></Panel></> }
 
+
+const MemoOverview = memo(Overview)
+const MemoLivePage = memo(LivePage)
+const MemoExplorer = memo(Explorer)
+const MemoAftershocks = memo(Aftershocks)
+const MemoAnalysis = memo(Analysis)
+const MemoQuality = memo(Quality)
+const MemoCompare = memo(Compare)
+const MemoMethodology = memo(Methodology)
+
 export default function App() {
- const [page,setPage]=useState('Overview'),[mobileOpen,setMobileOpen]=useState(false),[overview,setOverview]=useState(null),[yearly,setYearly]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[dark,setDark]=useState(true),[refreshKey,setRefreshKey]=useState(0),[networkBusy,setNetworkBusy]=useState(false)
+ const [page,setPage]=useState('Overview'),[visitedPages,setVisitedPages]=useState(()=>new Set(['Overview'])),[mobileOpen,setMobileOpen]=useState(false),[overview,setOverview]=useState(null),[yearly,setYearly]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[dark,setDark]=useState(true),[refreshVersions,setRefreshVersions]=useState({}),[networkBusy,setNetworkBusy]=useState(false)
  useEffect(()=>subscribeApiLoading(setNetworkBusy),[])
  const refresh=(force=true)=>{if(force)clearApiCache();setLoading(true);setError('');Promise.all([api('/api/overview',undefined,{force}),api('/api/yearly',undefined,{force})]).then(([o,y])=>{setOverview(o);setYearly(y)}).catch(e=>setError(e.message)).finally(()=>setLoading(false))}
  useEffect(()=>{refresh()},[])
- const refreshCurrentPage=()=>{clearApiCache();if(page==='Overview'){refresh(true)}else{setRefreshKey(v=>v+1)}}
- const active=nav.find(x=>x[0]===page)
- return <div className={`app-shell ${dark?'dark':'light'}`}><style>{`@keyframes tlPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}`}</style><aside className={`sidebar ${mobileOpen?'open':''}`} style={{height:'100vh',maxHeight:'100vh',overflowY:'auto',overflowX:'hidden',overscrollBehaviorY:'contain'}}><div className="brand"><div className="brand-mark"><Activity size={21}/></div><div><b>TREMOR<span>LENS</span></b><small>EARTHQUAKE INTELLIGENCE</small></div><button className="mobile-close" onClick={()=>setMobileOpen(false)}><X size={18}/></button></div><div className="workspace"><span className="workspace-dot"/> GLOBAL CATALOG <ChevronDown size={13}/></div><div className="nav-label">WORKSPACE</div><nav>{nav.map(([label,Icon])=><button key={label} className={page===label?'active':''} onClick={()=>{setPage(label);setMobileOpen(false)}}><Icon size={17}/><span>{label}</span>{label==='Live Earthquakes'&&<i className="live-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="source-card"><div><span className="source-led"/> DATA SOURCES</div><p>USGS · EMSC</p><small>Catalog & live feed</small></div><div className="sidebar-foot">TremorLens <span>v1.0</span><br/><small>Research & exploration</small></div></div></aside>
- <main className="main-area"><header className="topbar"><button className="menu-btn" onClick={()=>setMobileOpen(true)}><Menu size={20}/></button><div className="breadcrumb">Workspace <span>/</span> <b>{page}</b></div><div className="top-actions"><div className="system-status"><i/> API-powered workspace</div>{networkBusy&&<div role="status" aria-live="polite" style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:"var(--muted, #9aa6b8)"}}><span style={{width:8,height:8,borderRadius:"50%",background:"#ff9a58",display:"inline-block",animation:"tlPulse 1s ease-in-out infinite"}}/>Updating data…</div>}<button className="outline-btn" onClick={refreshCurrentPage} title="Clear cached response and reload this page" disabled={networkBusy}><RefreshCw size={15}/> Refresh</button><button className="theme-btn" title="Toggle theme" onClick={()=>setDark(!dark)}><Moon size={17}/></button><div className="avatar">TL</div></div></header><div className="page-content">{page==='Overview'&&<Overview data={overview} yearly={yearly} loading={loading} error={error}/ >}{page==='Live Earthquakes'&&<LivePage refreshKey={refreshKey}/ >}{page==='Global Explorer'&&<Explorer refreshKey={refreshKey}/ >}{page==='Pakistan & Hindu Kush'&&<Explorer region="Pakistan" refreshKey={refreshKey}/ >}{page==='Aftershock Explorer'&&<Aftershocks refreshKey={refreshKey}/ >}{page==='Seismic Analysis'&&<Analysis yearly={yearly} refreshKey={refreshKey}/ >}{page==='Data Quality'&&<Quality refreshKey={refreshKey}/ >}{page==='USGS vs EMSC'&&<Compare refreshKey={refreshKey}/ >}{page==='Methodology'&&<Methodology/>}<footer className="app-footer"><span>© {new Date().getFullYear()} TremorLens</span><span>Monitoring & research only · Not an earthquake prediction or alert system</span></footer></div></main></div>
+ const visitPage=(label)=>{setVisitedPages(previous=>{const next=new Set(previous);next.add(label);return next});setPage(label);setMobileOpen(false)}
+ const refreshCurrentPage=()=>{clearApiCache();if(page==='Overview')refresh(true);else setRefreshVersions(previous=>({...previous,[page]:(previous[page]||0)+1}))}
+ const version=(label)=>refreshVersions[label]||0
+ const renderTab=(label,content)=><section key={label} style={{display:page===label?'block':'none'}} aria-hidden={page!==label}>{content}</section>
+ return <div className={`app-shell ${dark?'dark':'light'}`}><style>{`@keyframes tlPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}.map-wrap,.map-wrap .leaflet-container{position:relative!important;z-index:0!important;isolation:isolate}.map-wrap .leaflet-pane,.map-wrap .leaflet-top,.map-wrap .leaflet-bottom{z-index:1!important}.map-wrap .leaflet-control{z-index:2!important}`}</style><aside className={`sidebar ${mobileOpen?'open':''}`} style={{height:'100vh',maxHeight:'100vh',overflowY:'auto',overflowX:'hidden',overscrollBehaviorY:'contain'}}><div className="brand"><div className="brand-mark"><Activity size={21}/></div><div><b>TREMOR<span>LENS</span></b><small>EARTHQUAKE INTELLIGENCE</small></div><button className="mobile-close" onClick={()=>setMobileOpen(false)}><X size={18}/></button></div><div className="workspace"><span className="workspace-dot"/> GLOBAL CATALOG <ChevronDown size={13}/></div><div className="nav-label">WORKSPACE</div><nav>{nav.map(([label,Icon])=><button key={label} className={page===label?'active':''} onClick={()=>visitPage(label)}><Icon size={17}/><span>{label}</span>{label==='Live Earthquakes'&&<i className="live-indicator"/>}</button>)}</nav><div className="sidebar-bottom"><div className="source-card"><div><span className="source-led"/> DATA SOURCES</div><p>USGS · EMSC</p><small>Catalog & live feed</small></div><div className="sidebar-foot">TremorLens <span>v1.0</span><br/><small>Research & exploration</small></div></div></aside>
+ <main className="main-area"><header className="topbar"><button className="menu-btn" onClick={()=>setMobileOpen(true)}><Menu size={20}/></button><div className="breadcrumb">Workspace <span>/</span> <b>{page}</b></div><div className="top-actions"><div className="system-status"><i/> API-powered workspace</div>{networkBusy&&<div role="status" aria-live="polite" style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:"var(--muted, #9aa6b8)"}}><span style={{width:8,height:8,borderRadius:"50%",background:"#ff9a58",display:"inline-block",animation:"tlPulse 1s ease-in-out infinite"}}/>Updating data…</div>}<button className="outline-btn" onClick={refreshCurrentPage} title="Clear session cache and reload this page" disabled={networkBusy}><RefreshCw size={15}/> Refresh</button><button className="theme-btn" title="Toggle theme" onClick={()=>setDark(!dark)}><Moon size={17}/></button><div className="avatar">TL</div></div></header><div className="page-content">
+ {visitedPages.has('Overview')&&renderTab('Overview',<MemoOverview data={overview} yearly={yearly} loading={loading} error={error}/>)}
+ {visitedPages.has('Live Earthquakes')&&renderTab('Live Earthquakes',<MemoLivePage isActive={page==='Live Earthquakes'} refreshKey={version('Live Earthquakes')}/>)}
+ {visitedPages.has('Global Explorer')&&renderTab('Global Explorer',<MemoExplorer key="world" region="World" refreshKey={version('Global Explorer')}/>)}
+ {visitedPages.has('Pakistan & Hindu Kush')&&renderTab('Pakistan & Hindu Kush',<MemoExplorer key="pakistan" region="Pakistan" refreshKey={version('Pakistan & Hindu Kush')}/>)}
+ {visitedPages.has('Aftershock Explorer')&&renderTab('Aftershock Explorer',<MemoAftershocks refreshKey={version('Aftershock Explorer')}/>)}
+ {visitedPages.has('Seismic Analysis')&&renderTab('Seismic Analysis',<MemoAnalysis yearly={yearly} refreshKey={version('Seismic Analysis')}/>)}
+ {visitedPages.has('Data Quality')&&renderTab('Data Quality',<MemoQuality refreshKey={version('Data Quality')}/>)}
+ {visitedPages.has('USGS vs EMSC')&&renderTab('USGS vs EMSC',<MemoCompare refreshKey={version('USGS vs EMSC')}/>)}
+ {visitedPages.has('Methodology')&&renderTab('Methodology',<MemoMethodology/>)}
+ <footer className="app-footer"><span>© {new Date().getFullYear()} TremorLens</span><span>Monitoring & research only · Not an earthquake prediction or alert system</span></footer></div></main></div>
 }

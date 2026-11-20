@@ -129,6 +129,60 @@ def events(
         where += ["latitude BETWEEN :lat_min AND :lat_max", "longitude BETWEEN :lon_min AND :lon_max"]
     sql = f"SELECT event_id,event_time,latitude,longitude,depth_km,magnitude,mag_type,place,source FROM events_clean WHERE {' AND '.join(where)} ORDER BY event_time DESC LIMIT :limit"
     return clean(fetch_all(sql, params))
+@app.get("/api/events/paged")
+def events_paged(
+    year_from: int = Query(2000, ge=1900, le=2100),
+    year_to: int = Query(2100, ge=1900, le=2100),
+    min_magnitude: float = Query(0, ge=-2, le=10),
+    max_magnitude: float = Query(10, ge=-2, le=10),
+    region: str = Query("World"),
+    limit: int = Query(2000, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+):
+    """Return one page plus the exact count for the same filtered catalog query."""
+    if year_from > year_to:
+        raise HTTPException(422, "year_from must be less than or equal to year_to")
+    if min_magnitude > max_magnitude:
+        raise HTTPException(422, "min_magnitude must be less than or equal to max_magnitude")
+    if region not in REGIONS:
+        raise HTTPException(422, "Unknown region")
+
+    params: dict[str, Any] = {
+        "year_from": year_from,
+        "year_to": year_to,
+        "min_mag": min_magnitude,
+        "max_mag": max_magnitude,
+        "limit": limit,
+        "offset": offset,
+    }
+    where = [
+        "event_time >= make_date(:year_from,1,1)",
+        "event_time < make_date(:year_to + 1,1,1)",
+        "magnitude BETWEEN :min_mag AND :max_mag",
+    ]
+    bounds = REGIONS[region]
+    if bounds:
+        params.update(bounds)
+        where += [
+            "latitude BETWEEN :lat_min AND :lat_max",
+            "longitude BETWEEN :lon_min AND :lon_max",
+        ]
+    where_sql = " AND ".join(where)
+    count_rows = fetch_all(
+        f"SELECT COUNT(*) AS total FROM events_clean WHERE {where_sql}",
+        {k: v for k, v in params.items() if k not in ("limit", "offset")},
+    )
+    total = int(count_rows[0]["total"]) if count_rows else 0
+    rows = fetch_all(
+        f"""SELECT event_id,event_time,latitude,longitude,depth_km,magnitude,mag_type,place,source
+        FROM events_clean WHERE {where_sql}
+        ORDER BY event_time DESC, event_id
+        LIMIT :limit OFFSET :offset""",
+        params,
+    )
+    return {"items": clean(rows), "total": total, "limit": limit, "offset": offset}
+
+
 @app.get("/api/live")
 def live(feed: str = Query("all_day", pattern="^(all_hour|all_day|all_week|all_month)$")):
     url = f"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/{feed}.geojson"
