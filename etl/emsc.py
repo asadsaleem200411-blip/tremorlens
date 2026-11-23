@@ -2,7 +2,7 @@
 EMSC Earthquake Ingestion Pipeline (TremorLens ETL).
 
 Fetches earthquake events from the EMSC SeismicPortal FDSN API in monthly time windows,
-validates records with Pydantic, upserts valid events into the PostgreSQL
+transforms each window with pandas, validates records with Pydantic, upserts valid events into the PostgreSQL
 `emsc_events` table, routes invalid records into `rejected_records`,
 and tracks execution status and row metrics in `ingest_runs`.
 """
@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
+import pandas as pd
 import requests
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
@@ -349,6 +350,47 @@ def fetch_emsc_events(
     return {"type": "FeatureCollection", "features": []}
 
 
+def profile_features(features: List[dict]) -> Dict[str, int]:
+    """
+    pandas transform step 1 (before validation): profile the raw API batch.
+
+    The raw GeoJSON features are put into a DataFrame and counted:
+    missing or blank event ids, and missing / non-numeric magnitudes.
+    Nothing is changed or dropped here: Pydantic still sees every raw record
+    and alone decides what is valid or rejected.
+    """
+    stats = {"input_rows": len(features), "missing_id": 0, "bad_magnitude": 0}
+    if not features:
+        return stats
+
+    df = pd.DataFrame({
+        "event_id": [f.get("id") or (f.get("properties") or {}).get("unid") for f in features],
+        "mag": [(f.get("properties") or {}).get("mag") for f in features],
+    })
+    ids = df["event_id"].astype("string").str.strip()
+    stats["missing_id"] = int((ids.isna() | (ids == "")).sum())
+    stats["bad_magnitude"] = int(pd.to_numeric(df["mag"], errors="coerce").isna().sum())
+    return stats
+
+
+def dedupe_events(events: List[EMSCEvent]) -> Tuple[List[EMSCEvent], int]:
+    """
+    pandas transform step 2 (after validation): remove duplicate event ids.
+
+    If the same id appears more than once in a batch, the LAST valid copy is kept
+    and the order is preserved. This gives the same rows in the database as
+    upserting every copy one after another (last write wins), and it never drops
+    a valid record just because a later copy of the same id was invalid.
+    Returns (events_to_load, number_of_duplicates_removed).
+    """
+    if not events:
+        return [], 0
+    ids = pd.Series([e.id for e in events], dtype="string")
+    is_dup = ids.duplicated(keep="last")
+    kept = [e for e, dup in zip(events, is_dup.tolist()) if not dup]
+    return kept, int(is_dup.sum())
+
+
 def upsert_valid_events(engine: Engine, events: List[EMSCEvent]) -> int:
     """
     Upserts validated earthquake records into `emsc_events` using
@@ -454,6 +496,7 @@ def run_pipeline(
 
     - Iterates over monthly time windows between start_date and end_date.
     - Queries the EMSC SeismicPortal FDSN API for events with format=json, minmag=4.5, orderby=time-asc.
+    - Transforms each window with pandas (profile_features before, dedupe_events after validation).
     - Validates features using the EMSCEvent Pydantic model.
     - Upserts valid events into emsc_events.
     - Inserts invalid events into rejected_records.
@@ -500,6 +543,13 @@ def run_pipeline(
                 len(features),
             )
 
+            # Transform (pandas, step 1): profile the raw batch before validation
+            profile = profile_features(features)
+            logger.info(
+                "pandas profile: input=%d, missing_id=%d, bad_magnitude=%d",
+                profile["input_rows"], profile["missing_id"], profile["bad_magnitude"],
+            )
+
             valid_events: List[EMSCEvent] = []
             rejected_items: List[Dict[str, Any]] = []
 
@@ -513,6 +563,11 @@ def run_pipeline(
                         "raw_payload": feat,
                         "error_message": str(val_err),
                     })
+
+            # Transform (pandas, step 2): drop duplicate ids among the VALID events
+            valid_events, dup_removed = dedupe_events(valid_events)
+            if dup_removed:
+                logger.info("pandas dedupe: removed %d duplicate event ids (last copy kept)", dup_removed)
 
             # Upsert valid events into database
             loaded_count = upsert_valid_events(engine, valid_events)

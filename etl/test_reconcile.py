@@ -3,13 +3,13 @@ Unit and integration tests for the TremorLens reconciliation pipeline (etl/recon
 
 Tests:
 - Haversine distance calculation
-- Threshold constants (60s, 100km, 0.5 magnitude)
+- Threshold constants (60s, 150km, 1.0 magnitude)
 - 1-to-1 event matching:
   - Exact match
   - Two EMSC events competing for one USGS event (resolved by time diff)
   - Two EMSC events competing for one USGS event (tied time, resolved by distance)
   - Two USGS events competing for one EMSC event
-  - Threshold boundaries (time diff = 60s vs 60.1s; dist = 99km vs 101km; mag diff = 0.5 vs 0.51)
+  - Threshold boundaries (time diff = 60s vs 60.1s; dist = 149km vs 151km; mag diff = 0.9 vs 1.1)
 - Clean record creation:
   - source='both', USGS values preferred, USGS felt/cdi/mmi/sig kept, matched IDs populated
   - source='usgs_only' and 'emsc_only'

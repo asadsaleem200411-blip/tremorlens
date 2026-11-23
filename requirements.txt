@@ -1,6 +1,8 @@
 pandas
+numpy
 pydantic
 requests
+python-dateutil
 sqlalchemy
 psycopg2-binary
 scikit-learn
@@ -14,3 +16,4 @@ geopandas
 psycopg[binary]
 python-dotenv
 matplotlib
+pytest

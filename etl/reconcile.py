@@ -5,8 +5,9 @@ Builds the unified, deduplicated `events_clean` table from `usgs_events` and `em
 
 Matching criteria:
 - Origin times differ by at most 60 seconds (MAX_TIME_DIFF_SECONDS)
-- Epicentres are within 100 km (MAX_DISTANCE_KM, Haversine formula)
-- Magnitudes differ by at most 0.5 (MAX_MAG_DIFF)
+- Epicentres are within 150 km (MAX_DISTANCE_KM, Haversine formula)
+- Magnitudes differ by at most 1.0 (MAX_MAG_DIFF)
+(These gates were chosen with the threshold study, etl/threshold_study.py.)
 - One-to-one matching, prioritizing the closest candidate by time then distance.
 
 Output:
@@ -1047,7 +1048,7 @@ def run_reconcile(
     """
     Runs the full earthquake reconciliation pipeline:
     1. Fetches events from `usgs_events` and `emsc_events`.
-    2. Performs one-to-one matching inside the 60s/100km/0.5mag window.
+    2. Performs one-to-one matching inside the 60 s / 150 km / 1.0 magnitude gates.
     3. Builds `events_clean` records.
     4. Replaces records cleanly into `events_clean` in one transaction (unless dry_run is True).
     5. Computes quality statistics and saves reports/quality_report.csv.
